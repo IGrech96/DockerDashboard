@@ -1,49 +1,52 @@
 ﻿@page "/containers"
 @using System.Globalization
 @using System.Net
+@using DockerDashboard.Data
+@inject IDockerHostManager DockerHostManager
 <h3>Containers</h3>
 
-<div class="row">
-    <div class="col-lg-8">
-        <div id="containers-table" class="card">
-            <div class="card-header">
-                containers
-            </div>
-            <div class="card-body">
-                <table class="table table-striped">
+<div>
+    <div >
+        <div id="containers-table" >
+
+            <div >
+                <table class="table table-fixed">
                     <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>Category</th>
-                            <th>Subject</th>
-                            <th>Amount</th>
-                            <th>&nbsp;</th>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Status</th>
+                            <th>Image</th>
+                            <th>Ports</th>
+                            <th>Created</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @if (containers == null)
-                        {
-                            <tr><td><em>Loading...</em></td></tr>
-                        }
-                        else
-                        {
-                            @foreach (var container in containers)
-                            {
-                                <tr>
-                                    <td>@container.Date.ToShortDateString()</td>
-                                    <td>@container.Category</td>
-                                    <td>@container.Subject</td>
-                                    <td>@container.Amount.ToString("C2", CultureInfo.CreateSpecificCulture("en-US"))</td>
-                                    <td><button type="button" class="btn btn-danger btn-sm" @onclick="() => OpenDeleteDialog(container)">Delete</button></td>
-                                </tr>
-                            }
-                        }
+                    <Virtualize Context="container" ItemsProvider="LoadContainers" @ref="_virtualizeComponent" ItemSize="10">
+                        <ItemContent>
+                            <tr>
+                                <td><a href="/container/@_snapshot.SnapshotId/@container.ContainerId">@TrimContainerId(@container.ContainerId)</a> </td>
+                                <td><a href="/container/@_snapshot.SnapshotId/@container.ContainerId">@container.ContainerName</a></td>
+                                <td>@container.Status</td>
+                                <td><a href="">@container.ImageName</a> </td>
+                                <td><a href="@GetPortsLink(@container)">@GetPortsText(container)</a></td>
+                                <td>@container.Created</td>
+                                <td><button type="button" class="btn btn-danger btn-sm" @onclick="() => { }">Delete</button></td>
+                            </tr>
+                        </ItemContent>
+                        <Placeholder>
+                            <p>
+                                Loading&hellip;
+                            </p>
+                        </Placeholder>
+                    </Virtualize>
                     </tbody>
                 </table>
             </div>
-        </div>
-    </div>
-    <div class="col-lg-4">
+         </div>
+    </div> 
+     <div class="col-lg-4">
         <containerForm OnSubmitCallback="@Refresh"></containerForm>
     </div>
 </div>
@@ -58,44 +61,51 @@
 }
 
 @code {
-    private container[] containers;
-
-    private container _containerToDelete;
+    // private Container[]? containers;
+    private Virtualize<ContainerModel>? _virtualizeComponent;
+    private ContainersSnapshot? _snapshot;
     public bool DeleteDialogOpen { get; set; }
 
     private async Task OnDeleteDialogClose(bool accepted)
     {
         if (accepted)
         {
-            await WebRequestMethods.Http.DeleteAsync($"api/containers/{_containerToDelete.Id}");
-            await LoadData();
-            _containerToDelete = null;
+            // await WebRequestMethods.Http.DeleteAsync($"api/containers/{_containerToDelete.Id}");
+            // await LoadData();
+            // _containerToDelete = null;
         }
 
         DeleteDialogOpen = false;
         StateHasChanged();
     }
 
-    private void OpenDeleteDialog(container container)
+    protected override async Task OnInitializedAsync()
     {
-        DeleteDialogOpen = true;
-        _containerToDelete = container;
-        StateHasChanged();
+        _snapshot = await DockerHostManager.GetContainersSnapshot();
+        await _virtualizeComponent!.RefreshDataAsync();
     }
 
-    protected async override Task OnInitializedAsync()
+    public async ValueTask<ItemsProviderResult<ContainerModel>> LoadContainers(ItemsProviderRequest request)
     {
-        await LoadData();
-    }
+        if (_snapshot == null)
+        {
+            return new ItemsProviderResult<ContainerModel>([], 0);
+        }
+        var data = await DockerHostManager
+            .GetContainers(_snapshot.SnapshotId, request.StartIndex, request.Count)
+            .ToArrayAsync(request.CancellationToken);
 
-    private async Task LoadData()
-    {
-        containers = await WebRequestMethods.Http.GetFromJsonAsync<container[]>("api/containers");
-        StateHasChanged();
+        return new ItemsProviderResult<ContainerModel>(data, _snapshot.TotalCount);
     }
 
     public async void Refresh()
     {
-        await LoadData();
+        // await LoadData();
     }
+
+    public static string TrimContainerId(string containerId) => containerId.Substring(0, Math.Min(12, containerId.Length));
+
+    public static string GetPortsLink(ContainerModel container) => "";
+
+    public static string GetPortsText(ContainerModel container) => string.Join("<br/>", container.Ports.Select(p => $"{p.localPort}:{p.containerPort}"));
 }

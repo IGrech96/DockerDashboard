@@ -1,0 +1,4 @@
+﻿.table-fixed {
+    overflow-x: scroll;
+    display: grid;
+}

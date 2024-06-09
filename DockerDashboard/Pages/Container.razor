@@ -1,0 +1,10 @@
+﻿@page "/container/{SnapshotId}/{ContainerId}"
+<h3>Container</h3>
+
+@code {
+    [Parameter]
+    public string SnapshotId { get; set; }
+
+    [Parameter]
+    public string ContainerId { get; set; }
+}

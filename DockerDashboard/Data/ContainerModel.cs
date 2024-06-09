@@ -1,6 +1,6 @@
 ﻿namespace DockerDashboard.Data;
 
-public class Container
+public class ContainerModel
 {
     public string ContainerId { get; set; }
 
@@ -10,9 +10,9 @@ public class Container
 
     public ContainerStatus Status { get; set; }
 
-    public string Created { get; set; }
+    public DateTime Created { get; set; }
 
-    public (int localPort, int containerPort)[] Ports { get; set; }
+    public (ushort localPort, ushort containerPort)[] Ports { get; set; }
 }
 
 public enum ContainerStatus
@@ -25,5 +25,9 @@ public enum ContainerStatus
 
     Failed,
 
+    Exited,
+
     Stoped,
+
+    NA
 }
