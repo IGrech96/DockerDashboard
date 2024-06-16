@@ -1,0 +1,113 @@
+﻿@using DockerDashboard.Data
+@inject IDockerHostManager DockerHostManager
+
+<RadzenDataGrid @ref=grid Data="@orderContainers" LoadData="@LoadData" Count="@count" AllowVirtualization="true" Style="height:400px"
+                AllowFiltering="true" FilterPopupRenderMode="PopupRenderMode.OnDemand" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" LogicalFilterOperator="LogicalFilterOperator.Or"
+                AllowSorting="true">
+    <Columns>
+        <RadzenDataGridColumn Title="Name">
+            <Template Context="data">
+                <Button class="button-link" onclick="@(() => OpenContainer(data))">@data.ContainerName.TrimStart('/')</Button>
+                <RadzenStack Orientation="Orientation.Horizontal">
+                    <RadzenText TextStyle="TextStyle.Caption">@data.ShortId</RadzenText>
+                    @* <RadzenIcon Icon="content_copy" style="font-size=1em; width=5px; font-weight=100"></RadzenIcon> *@
+                </RadzenStack>
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn Title="Image">
+            <Template Context="data">
+                <a href="">@data.ImageName</a>
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn Property="Status" Title="Status">
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn Title="Port(s)">
+            <Template Context="data">
+                <RadzenStack Wrap="FlexWrap.Wrap" Gap="0">
+                    @foreach (var (localPort, containerPort) in data.Ports)
+                    {
+                        <a href="">@localPort:@containerPort</a>
+                    }
+                </RadzenStack>
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn Property="Created" Title="Created">
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn Title="Actions" Filterable="false" Sortable="false" Frozen="true">
+            <Template Context="data">
+                <RadzenButton Icon="play_arrow" ButtonStyle="ButtonStyle.Light"></RadzenButton>
+                <RadzenButton Icon="more_vert" ButtonStyle="ButtonStyle.Light"></RadzenButton>
+                <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Light"></RadzenButton>
+            </Template>
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>
+
+@code {
+    private RadzenDataGrid<ContainerModel> grid;
+    private int count;
+    private IEnumerable<ContainerModel> orderContainers;
+
+    [Parameter]
+    public ContainersSnapshot? Snapshot { get; set; }
+
+    [Parameter]
+    public Func<ContainerModel, Task>? OnContainerOpen { get; set; }
+
+    private async Task OpenContainer(ContainerModel model)
+    {
+        if (OnContainerOpen != null)
+        {
+            await OnContainerOpen(model);
+        }
+    }
+
+    protected override Task OnInitializedAsync()
+    {
+        return base.OnInitializedAsync();
+    }
+
+    string lastfilter;
+    async Task LoadData(LoadDataArgs args)
+    {
+        if (Snapshot == null)
+        {
+            return;
+        }
+        await Task.Yield();
+
+        if (!string.IsNullOrEmpty(args.Filter) && lastfilter != args.Filter)
+        {
+            args.Skip = 0;
+        }
+
+        var query = DockerHostManager
+            .GetContainers(Snapshot.SnapshotId);
+
+
+        if (!string.IsNullOrEmpty(args.Filter))
+        {
+            lastfilter = args.Filter;
+            //query = query.Where(args.Filter);
+            //count = await Task.FromResult(query.Count());
+        }
+        else
+        {
+            //count = await Task.FromResult(dbContext.OrderDetails.Count());
+        }
+
+        // if (!string.IsNullOrEmpty(args.OrderBy))
+        // {
+        //     query = query.OrderBy(args.OrderBy);
+        // }
+
+        orderContainers = await query.Skip(args.Skip.Value).Take(args.Top.Value).ToListAsync();
+        count = orderContainers.Count();
+    }
+
+    public Task RefreshDataAsync()
+    {
+        return grid.RefreshDataAsync();
+    }
+
+}

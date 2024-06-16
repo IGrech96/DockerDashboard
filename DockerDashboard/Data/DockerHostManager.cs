@@ -1,16 +1,23 @@
 ﻿using Docker.DotNet;
 using Docker.DotNet.Models;
+using DockerDashboard.Hubs;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Caching.Memory;
+using System;
 
 namespace DockerDashboard.Data;
 
 public class DockerHostManager : IDockerHostManager
 {
     private readonly IMemoryCache _memoryCache;
+    private readonly IHubContext<ContainerDetailsHub> _containerDetailsHub;
     private readonly IDockerClient client_;
-    public DockerHostManager(IMemoryCache memoryCache)
+    public DockerHostManager(
+        IMemoryCache memoryCache,
+        IHubContext<ContainerDetailsHub> containerDetailsHub)
     {
         _memoryCache = memoryCache;
+        _containerDetailsHub = containerDetailsHub;
         client_ = new DockerClientConfiguration().CreateClient();
     }
 
@@ -37,11 +44,14 @@ public class DockerHostManager : IDockerHostManager
         };
     }
 
-    public IAsyncEnumerable<ContainerModel> GetContainers(Guid snapshotId, int startIndex, int count)
+    public Task SubscribeToContainerDetails(string containerId)
     {
-        var data = _memoryCache.Get<IList<ContainerListResponse>>(snapshotId) ?? [];
+        client_.System.MonitorEventsAsync(new(), new Progress<Message>(m =>
+        {
 
-        return data.Skip(startIndex).Take(count).Select(ToContainer).ToAsyncEnumerable();
+        }));
+
+        return Task.CompletedTask;
     }
 
     public IAsyncEnumerable<ContainerModel> GetContainers(Guid snapshotId)
@@ -63,4 +73,18 @@ public class DockerHostManager : IDockerHostManager
             Ports = response.Ports.Select(p => (p.PublicPort, p.PublicPort)).ToArray(), //todo
         };
     }
+
+    //private ContainerModel ToContainerDetails(ContainerStatsResponse response)
+    //{
+    //    return new ContainerModel()
+    //    {
+    //        ContainerId = response.ID,
+    //        ShortId = response.ID.Substring(0, 12),
+    //        ContainerName = response.Names.First(), // todo,
+    //        Status = MapStatus(response.),
+    //        Created = response.Created,
+    //        ImageName = response.Image,
+    //        Ports = response.Ports.Select(p => (p.PublicPort, p.PublicPort)).ToArray(), //todo
+    //    };
+    //}
 }

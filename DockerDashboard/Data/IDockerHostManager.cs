@@ -4,8 +4,6 @@ public interface IDockerHostManager
 {
     Task<ContainersSnapshot> GetContainersSnapshot();
 
-    IAsyncEnumerable<ContainerModel> GetContainers(Guid snapshotId, int startIndex, int count);
-
     IAsyncEnumerable<ContainerModel> GetContainers(Guid snapshotId);
 }
 

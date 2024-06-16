@@ -1,4 +1,5 @@
 using DockerDashboard.Data;
+using DockerDashboard.Hubs;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Radzen;
@@ -11,6 +12,7 @@ builder.Services.AddServerSideBlazor();
 builder.Services.AddSingleton<WeatherForecastService>();
 builder.Services.AddSingleton<IDockerHostManager, DockerHostManager>();
 builder.Services.AddRadzenComponents();
+builder.Services.AddSignalR();
 
 var app = builder.Build();
 
@@ -30,5 +32,7 @@ app.UseRouting();
 
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
+
+app.MapHub<ContainerDetailsHub>("/containerDetailsHub");
 
 app.Run();
