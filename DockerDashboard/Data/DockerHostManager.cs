@@ -44,11 +44,18 @@ public class DockerHostManager : IDockerHostManager
         return data.Skip(startIndex).Take(count).Select(ToContainer).ToAsyncEnumerable();
     }
 
+    public IAsyncEnumerable<ContainerModel> GetContainers(Guid snapshotId)
+    {
+        var data = _memoryCache.Get<IList<ContainerListResponse>>(snapshotId) ?? [];
+        return data.Select(ToContainer).ToAsyncEnumerable();
+    }
+
     private ContainerModel ToContainer(ContainerListResponse response)
     {
         return new ContainerModel()
         {
             ContainerId = response.ID,
+            ShortId = response.ID.Substring(0, 12),
             ContainerName = response.Names.First(), // todo,
             Status = MapStatus(response.Status),
             Created = response.Created,

@@ -4,6 +4,8 @@ public class ContainerModel
 {
     public string ContainerId { get; set; }
 
+    public string ShortId { get; set; }
+
     public string ContainerName { get; set; }
 
     public string ImageName { get; set; }

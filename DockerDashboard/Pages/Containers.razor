@@ -5,64 +5,105 @@
 @inject IDockerHostManager DockerHostManager
 <h3>Containers</h3>
 
-<div>
-    <div >
-        <div id="containers-table" >
+<RadzenButton Text="Refresh" Click="@(args => grid.Reload())" class="my-3" />
 
-            <div >
-                <table class="table table-fixed">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Status</th>
-                            <th>Image</th>
-                            <th>Ports</th>
-                            <th>Created</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    <Virtualize Context="container" ItemsProvider="LoadContainers" @ref="_virtualizeComponent" ItemSize="10">
-                        <ItemContent>
-                            <tr>
-                                <td><a href="/container/@_snapshot.SnapshotId/@container.ContainerId">@TrimContainerId(@container.ContainerId)</a> </td>
-                                <td><a href="/container/@_snapshot.SnapshotId/@container.ContainerId">@container.ContainerName</a></td>
-                                <td>@container.Status</td>
-                                <td><a href="">@container.ImageName</a> </td>
-                                <td><a href="@GetPortsLink(@container)">@GetPortsText(container)</a></td>
-                                <td>@container.Created</td>
-                                <td><button type="button" class="btn btn-danger btn-sm" @onclick="() => { }">Delete</button></td>
-                            </tr>
-                        </ItemContent>
-                        <Placeholder>
-                            <p>
-                                Loading&hellip;
-                            </p>
-                        </Placeholder>
-                    </Virtualize>
-                    </tbody>
-                </table>
-            </div>
-         </div>
-    </div> 
-     <div class="col-lg-4">
-        <containerForm OnSubmitCallback="@Refresh"></containerForm>
-    </div>
-</div>
-<div>&nbsp;</div>
-@if (DeleteDialogOpen)
-{
-    <ModalDialog Title="Are you sure?"
-                 Text="Do you want to delete this entry?"
-                 OnClose="@OnDeleteDialogClose"
-                 DialogType="ModalDialog.ModalDialogType.DeleteCancel">
-    </ModalDialog>
-}
+<RadzenDataGrid @ref=grid Data="@orderContainers" LoadData="@LoadData" Count="@count" AllowVirtualization="true" Style="height:400px"
+                AllowFiltering="true" FilterPopupRenderMode="PopupRenderMode.OnDemand" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" LogicalFilterOperator="LogicalFilterOperator.Or"
+                AllowSorting="true">
+    <EmptyTemplate>
+        @if (!_initialized)
+        {
+            <RadzenProgressBarCircular Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate"/>
+        }
+        else
+        {
+            <p style="color: lightgrey; font-size: 24px; text-align: center; margin: 2rem;">No records to display.</p>
+        }
+    </EmptyTemplate>
+    <Columns>
+        <RadzenDataGridColumn Title="Name">
+            <Template Context="data">
+                <RadzenText TextStyle="TextStyle.Subtitle2" class="mb-0"><a href="">@data.ContainerName.TrimStart('/')</a></RadzenText>
+                <RadzenStack Orientation="Orientation.Horizontal">
+                    <RadzenText TextStyle="TextStyle.Caption">@data.ShortId</RadzenText>
+                    @* <RadzenIcon Icon="content_copy" style="font-size=1em; width=5px; font-weight=100"></RadzenIcon> *@
+                </RadzenStack>
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn Title="Image">
+            <Template Context="data">
+                <a href="">@data.ImageName</a>
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn Property="Status" Title="Status">
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn Title="Port(s)">
+            <Template Context="data">
+                <RadzenStack Wrap="FlexWrap.Wrap" Gap="0">
+                @foreach (var (localPort, containerPort) in data.Ports)
+                {
+                    <a href="">@localPort:@containerPort</a>
+                }
+                </RadzenStack>
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn Property="Created" Title="Created">
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn Title="Actions" Filterable="false" Sortable="false">
+            <Template Context="data">
+                <RadzenButton Icon="play_arrow" ButtonStyle="ButtonStyle.Light"></RadzenButton>
+                <RadzenButton Icon="more_vert" ButtonStyle="ButtonStyle.Light"></RadzenButton>
+                <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Light"></RadzenButton>
+            </Template>
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>
 
 @code {
-    // private Container[]? containers;
-    private Virtualize<ContainerModel>? _virtualizeComponent;
+    // EventConsole console;
+    private RadzenDataGrid<ContainerModel> grid;
+    private int count;
+    private IEnumerable<ContainerModel> orderContainers;
+    private bool _initialized = false;
+
+    string lastfilter;
+    async Task LoadData(LoadDataArgs args)
+    {
+        if (_snapshot == null)
+        {
+            return;
+        }
+        await Task.Yield();
+
+        if(!string.IsNullOrEmpty(args.Filter) && lastfilter != args.Filter)
+        {
+            args.Skip = 0;
+        }
+
+        var query = DockerHostManager
+            .GetContainers(_snapshot.SnapshotId);
+
+
+        if (!string.IsNullOrEmpty(args.Filter))
+        {
+            lastfilter = args.Filter;
+            //query = query.Where(args.Filter);
+            //count = await Task.FromResult(query.Count());
+        }
+        else
+        {
+            //count = await Task.FromResult(dbContext.OrderDetails.Count());
+        }
+
+        // if (!string.IsNullOrEmpty(args.OrderBy))
+        // {
+        //     query = query.OrderBy(args.OrderBy);
+        // }
+
+        orderContainers = await query.Skip(args.Skip.Value).Take(args.Top.Value).ToListAsync();
+        count = orderContainers.Count();
+    }
+
     private ContainersSnapshot? _snapshot;
     public bool DeleteDialogOpen { get; set; }
 
@@ -82,30 +123,31 @@
     protected override async Task OnInitializedAsync()
     {
         _snapshot = await DockerHostManager.GetContainersSnapshot();
-        await _virtualizeComponent!.RefreshDataAsync();
+        await grid.RefreshDataAsync();
+
+        _initialized = true;
+        //await _virtualizeComponent!.RefreshDataAsync();
     }
 
-    public async ValueTask<ItemsProviderResult<ContainerModel>> LoadContainers(ItemsProviderRequest request)
-    {
-        if (_snapshot == null)
-        {
-            return new ItemsProviderResult<ContainerModel>([], 0);
-        }
-        var data = await DockerHostManager
-            .GetContainers(_snapshot.SnapshotId, request.StartIndex, request.Count)
-            .ToArrayAsync(request.CancellationToken);
+    // public async ValueTask<ItemsProviderResult<ContainerModel>> LoadContainers(ItemsProviderRequest request)
+    // {
+    //     if (_snapshot == null)
+    //     {
+    //         return new ItemsProviderResult<ContainerModel>([], 0);
+    //     }
+    //     var data = await DockerHostManager
+    //         .GetContainers(_snapshot.SnapshotId, request.StartIndex, request.Count)
+    //         .ToArrayAsync(request.CancellationToken);
 
-        return new ItemsProviderResult<ContainerModel>(data, _snapshot.TotalCount);
-    }
+    //     return new ItemsProviderResult<ContainerModel>(data, _snapshot.TotalCount);
+    // }
 
     public async void Refresh()
     {
         // await LoadData();
     }
 
-    public static string TrimContainerId(string containerId) => containerId.Substring(0, Math.Min(12, containerId.Length));
+    public static string GetPortsLink(ushort localPort, ushort containerPort) => "";
 
-    public static string GetPortsLink(ContainerModel container) => "";
-
-    public static string GetPortsText(ContainerModel container) => string.Join("<br/>", container.Ports.Select(p => $"{p.localPort}:{p.containerPort}"));
+    public static string GetPortsText(ushort localPort, ushort containerPort) => $"{localPort}:{containerPort}";
 }
