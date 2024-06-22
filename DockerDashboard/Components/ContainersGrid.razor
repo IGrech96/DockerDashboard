@@ -1,4 +1,5 @@
 ﻿@using DockerDashboard.Data
+@using DockerDashboard.Services
 @inject IDockerHostManager DockerHostManager
 
 <RadzenDataGrid @ref=grid Data="@orderContainers" LoadData="@LoadData" Count="@count" AllowVirtualization="true" Style="height:400px"

@@ -1,61 +1,71 @@
 ﻿@using DockerDashboard.Data
+@using DockerDashboard.Services
 @using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.AspNetCore.Components.Sections
 @inject NavigationManager Navigation
 @inject IDockerHostManager DockerHostManager
 @inject TooltipService TooltipService
 
 @if (Container == null)
 {
-    <RadzenStack AlignItems="AlignItems.Center">
-        <RadzenProgressBarCircular ShowValue="true" Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Large">
-            <Template>Loading...</Template>
-        </RadzenProgressBarCircular>
-    </RadzenStack>
+    <SectionContent SectionName="page-details-sidebar">
+        <RadzenStack AlignItems="AlignItems.Center">
+            <RadzenProgressBarCircular ShowValue="true" Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Large">
+                <Template>Loading...</Template>
+            </RadzenProgressBarCircular>
+        </RadzenStack>
+    </SectionContent>
 }
 else
 {
-    <RadzenMenu>
-        <RadzenMenuItem Text="@EnsureFullMode(ChooseMenuText("Run", "Stop"))" Icon="@ChooseMenuText("play_arrow", "stop")" MouseEnter="@(args => ShowTooltip(args,ChooseMenuText("Run", "Stop")))"></RadzenMenuItem>
-        <RadzenMenuItem Text="@EnsureFullMode(ChooseMenuText("Resume", "Pause"))" Icon="@ChooseMenuText("play_arrow", "pause")" MouseEnter="@(args => ShowTooltip(args,ChooseMenuText("Resume", "Pause")))"></RadzenMenuItem>
-        <RadzenMenuItem Text="@EnsureFullMode("Delete")" Icon="delete" MouseEnter="@(args => ShowTooltip(args,"Delete"))"></RadzenMenuItem>
-        <RadzenMenuItem Text="@EnsureFullMode("Restart")" Icon="restart_alt" MouseEnter="@(args => ShowTooltip(args,"Restart"))"></RadzenMenuItem>
-        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
-            <RadzenMenuItem Icon="open_in_new"></RadzenMenuItem>
-            <RadzenMenuItem Icon="close" Click="OnContainerDetailsClose"></RadzenMenuItem>
+    <SectionContent SectionName="page-details-toolbar">
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Start">
+                <RadzenButton Text="@EnsureFullMode(ChooseMenuText("Run", "Stop"))" Icon="@ChooseMenuText("play_arrow", "stop")" MouseEnter="@(args => ShowTooltip(args,ChooseMenuText("Run", "Stop")))"></RadzenButton>
+                <RadzenButton Text="@EnsureFullMode(ChooseMenuText("Resume", "Pause"))" Icon="@ChooseMenuText("play_arrow", "pause")" MouseEnter="@(args => ShowTooltip(args,ChooseMenuText("Resume", "Pause")))"></RadzenButton>
+                        <RadzenButton Text="@EnsureFullMode("Delete")" Icon="delete" MouseEnter="@(args => ShowTooltip(args,"Delete"))"></RadzenButton>
+                            <RadzenButton Text="@EnsureFullMode("Restart")" Icon="restart_alt" MouseEnter="@(args => ShowTooltip(args,"Restart"))"></RadzenButton>
+            </RadzenStack>
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End">
+                <RadzenButton Icon="open_in_new" MouseEnter="@(args => ShowTooltip(args, "Open in a new tab"))"></RadzenButton>
+                <RadzenButton Icon="close" Click="OnContainerDetailsClose" MouseEnter="@(args => ShowTooltip(args, "Close"))"></RadzenButton>
+            </RadzenStack>
         </RadzenStack>
-    </RadzenMenu>
-    <RadzenDataGrid Data="@_containerCommonInfo">
-        <Columns>
-            <RadzenDataGridColumn Title="Name" Property="Name"></RadzenDataGridColumn>
-            <RadzenDataGridColumn Title="Value" Property="Value">
-                <Template Context="data">
-                    @if (data.Value is DateTime dateTime)
-                    {
-                        @dateTime.ToString("yyyy-MM-dd hh:mm:ss")
-                    }
-                    else if (data is { Name: "Image", Value: not null })
-                    {
-                        <a href="">@data.Value.ToString()!.TrimStart('/')</a>
-                    }
-                    else
-                    {
-                        @data.Value?.ToString()
-                    }
-                </Template>
-            </RadzenDataGridColumn>
-        </Columns>
-    </RadzenDataGrid>
-    <RadzenTabs TabPosition="TabPosition.Top" RenderMode="TabRenderMode.Client">
-        <Tabs>
-            <RadzenTabsItem Text="Logs"></RadzenTabsItem>
-            <RadzenTabsItem Text="Details"></RadzenTabsItem>
-            <RadzenTabsItem Text="Inspect"></RadzenTabsItem>
-            <RadzenTabsItem Text="Stats"></RadzenTabsItem>
-            <RadzenTabsItem Text="Volumes"></RadzenTabsItem>
-            <RadzenTabsItem Text="Networks"></RadzenTabsItem>
-            <RadzenTabsItem Text="Files"></RadzenTabsItem>
-        </Tabs>
-    </RadzenTabs>
+    </SectionContent>
+    <SectionContent SectionName="page-details-sidebar">
+        <RadzenDataGrid Data="@_containerCommonInfo">
+            <Columns>
+                <RadzenDataGridColumn Title="Name" Property="Name"></RadzenDataGridColumn>
+                <RadzenDataGridColumn Title="Value" Property="Value">
+                    <Template Context="data">
+                        @if (data.Value is DateTime dateTime)
+                        {
+                            @dateTime.ToString("yyyy-MM-dd hh:mm:ss")
+                        }
+                        else if (data is { Name: "Image", Value: not null })
+                        {
+                            <a href="">@data.Value.ToString()!.TrimStart('/')</a>
+                        }
+                        else
+                        {
+                            @data.Value?.ToString()
+                        }
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+        <RadzenTabs TabPosition="TabPosition.Top" RenderMode="TabRenderMode.Client">
+            <Tabs>
+                <RadzenTabsItem Text="Logs"></RadzenTabsItem>
+                <RadzenTabsItem Text="Details"></RadzenTabsItem>
+                <RadzenTabsItem Text="Inspect"></RadzenTabsItem>
+                <RadzenTabsItem Text="Stats"></RadzenTabsItem>
+                <RadzenTabsItem Text="Volumes"></RadzenTabsItem>
+                <RadzenTabsItem Text="Networks"></RadzenTabsItem>
+                <RadzenTabsItem Text="Files"></RadzenTabsItem>
+            </Tabs>
+        </RadzenTabs>
+    </SectionContent>
 }
 
 @code {
@@ -121,7 +131,7 @@ else
         public object? Value { get; set; } = value;
     }
 
-    private async Task OnContainerDetailsClose(MenuItemEventArgs arg)
+    private async Task OnContainerDetailsClose()
     {
         if (Close != null)
         {

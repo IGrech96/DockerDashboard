@@ -1,4 +1,6 @@
-﻿namespace DockerDashboard.Data;
+﻿using DockerDashboard.Data;
+
+namespace DockerDashboard.Services;
 
 public interface IDockerHostManager
 {

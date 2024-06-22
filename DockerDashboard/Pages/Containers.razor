@@ -1,8 +1,10 @@
-﻿@page "/containers"
+﻿@page "/containers/{environmentid}"
 @using DockerDashboard.Data
 @using DockerDashboard.Components
+@using DockerDashboard.Services
+@using Microsoft.AspNetCore.Components.Sections
 @inject IDockerHostManager DockerHostManager
-<h3>Containers</h3>
+@inject IPageDetailsNotificationService PageDetailsNotificationService;
 
 <style>
     .rz-grid-table {
@@ -10,25 +12,26 @@
     }
 </style>
 
+<SectionContent SectionName="page-toolbar">
+    <RadzenStack Orientation="Orientation.Horizontal">
+        <RadzenLabel Text="Containers"></RadzenLabel>
+    </RadzenStack>
+</SectionContent>
+
 <RadzenLayout Style="grid-template-columns: 1fr auto; grid-template-areas: 'rz-header rz-sidebar' 'rz-body rz-sidebar'">
     <RadzenBody>
         <ContainersGrid @ref="grid" Snapshot="_snapshot" OnContainerOpen="OnContainerOpen"></ContainersGrid>
     </RadzenBody>
-    <RadzenHeader>
-        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center" Gap="1rem">
-            <RadzenButton Text="Refresh" Click="@(args => grid.RefreshDataAsync())" class="my-3" />
-        </RadzenStack>
-    </RadzenHeader>
-    <RadzenSidebar @ref="_sidebar" @bind-Expanded="@_sidebarExpanded" Responsive="false">
-       @*  <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End" Orientation="Orientation.Horizontal" Class="rz-p-2_sidebarExpanded">
-            <RadzenButton Icon="open_in_new" Variant="Variant.Text" ButtonStyle="ButtonStyle.Secondary"></RadzenButton>
-            <RadzenButton Icon="close" Variant="Variant.Text" ButtonStyle="ButtonStyle.Secondary" Click="OnContainerDetailsClose"/>
-        </RadzenStack> *@
-        <ContainerDetails Container="@_containerDetails" CompactMode="true" Close="OnContainerDetailsClose"></ContainerDetails>
-    </RadzenSidebar>
+    <ContainerDetails Container="@_containerDetails" CompactMode="true" Close="OnContainerDetailsClose"></ContainerDetails>
 </RadzenLayout>
 @code {
     // EventConsole console;
+
+    [Parameter]
+    public string environmentid { get; set; }
+
+    [CascadingParameter]
+    public RadzenStack Layout { get; set; }
     
     private bool _initialized = false;
     private ContainersGrid grid;
@@ -70,16 +73,18 @@
     {
         _containerDetails = arg;
         _sidebarExpanded = true;
+        await PageDetailsNotificationService.OpenPageDetailsAsync();
         StateHasChanged();
     }
 
-    private Task OnContainerDetailsClose()
+    private async Task OnContainerDetailsClose()
     {
+        await PageDetailsNotificationService.ClosePageDetailsAsync();
         _sidebarExpanded = false;
         _containerDetails = null;
 
+        
         StateHasChanged();
-        return Task.CompletedTask;
     }
 
 }

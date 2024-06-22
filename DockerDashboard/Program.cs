@@ -1,7 +1,7 @@
 using DockerDashboard.Data;
 using DockerDashboard.Hubs;
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
+using DockerDashboard.Services;
+using DockerDashboard.Services.Environment;
 using Radzen;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,10 +9,14 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
-builder.Services.AddSingleton<WeatherForecastService>();
 builder.Services.AddSingleton<IDockerHostManager, DockerHostManager>();
 builder.Services.AddRadzenComponents();
 builder.Services.AddSignalR();
+
+builder.Services.AddScoped<IPageDetailsNotificationService, SimplePageDetailsNotificationService>();
+builder.Services.AddSingleton<DockerEnvironmentManager>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<DockerEnvironmentManager>());
+builder.Services.AddSingleton<IDockerEnvironmentManager>(sp => sp.GetRequiredService<DockerEnvironmentManager>());
 
 var app = builder.Build();
 

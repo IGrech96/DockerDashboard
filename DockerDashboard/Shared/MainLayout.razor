@@ -1,20 +1,76 @@
-﻿@inherits LayoutComponentBase
+﻿@using DockerDashboard.Services
+@using DockerDashboard.Services.Environment
+@using Microsoft.AspNetCore.Components.Sections
+@inherits LayoutComponentBase
+@inject IDockerEnvironmentManager DockerEnvironmentManager
+@inject IPageDetailsNotificationService PageDetailsNotificationService;
 
-<PageTitle>DockerDashboard</PageTitle>
+<PageTitle>Docker Dashboard</PageTitle>
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<RadzenLayout Style="grid-template-columns: auto 1fr auto; grid-template-areas: 'rz-header rz-header rz-header' 'rz-sidebar rz-body rz-right-sidebar'">
+    <RadzenHeader>
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="0">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Start">
+                <RadzenSidebarToggle Click="@(() => _sidebarExpanded = !_sidebarExpanded)"/>
+                <SectionOutlet SectionName="page-toolbar"/>
+            </RadzenStack>
+            <RadzenStack JustifyContent="JustifyContent.End" Orientation="Orientation.Horizontal">
+                <SectionOutlet SectionName="page-details-toolbar"/>
+            </RadzenStack>
+           
+        </RadzenStack>
+        
+    </RadzenHeader>
+    <RadzenSidebar @bind-Expanded="@_sidebarExpanded">
+        <RadzenPanelMenu>
+            <RadzenPanelMenuItem Text="Home" Icon="home" />
+            <RadzenPanelMenuItem Text="Environments" Icon="view_headline">
+                @foreach (var environment in _environemnts)
+                {
+                    <RadzenPanelMenuItem Text="@environment.Name" Icon="api">
+                        <RadzenPanelMenuItem Text="Containers" Path="@($"/containers/{environment.Id}")"></RadzenPanelMenuItem>
+                        <RadzenPanelMenuItem Text="Images"></RadzenPanelMenuItem>
+                        <RadzenPanelMenuItem Text="Volumes"></RadzenPanelMenuItem>
+                        <RadzenPanelMenuItem Text="Logs"></RadzenPanelMenuItem>
+                        <RadzenPanelMenuItem Text="Host"></RadzenPanelMenuItem>
+                    </RadzenPanelMenuItem>
+                }
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
+            </RadzenPanelMenuItem>
+
+        </RadzenPanelMenu>
+    </RadzenSidebar>
+    <RadzenSidebar @bind-Expanded="@_sidebarDetailedExpanded" Style="width: 300px; grid-area: rz-right-sidebar" Responsive="false">
+        <div class="rz-p-4">
+            <SectionOutlet SectionName="page-details-sidebar" />
         </div>
-
-        <article class="content px-4">
+    </RadzenSidebar>
+    <RadzenBody>
+        <div>
             @Body
-        </article>
-    </main>
-</div>
+        </div>
+    </RadzenBody>
+</RadzenLayout>
 <RadzenComponents />
+
+@code {
+    bool _sidebarExpanded = true;
+    bool _sidebarDetailedExpanded = false;
+    private DockerEnvironemnt[] _environemnts = [];
+    protected override async Task OnInitializedAsync()
+    {
+        PageDetailsNotificationService.PageDetailsClose += () =>
+        {
+            _sidebarDetailedExpanded = false;
+            StateHasChanged();
+            return Task.CompletedTask;
+        };
+        PageDetailsNotificationService.PageDetailsOpen += () =>
+        {
+            _sidebarDetailedExpanded = true;
+            StateHasChanged();
+            return Task.CompletedTask;
+        };
+        _environemnts = await DockerEnvironmentManager.GetAllEnvironmentsAsync(CancellationToken.None).ToArrayAsync();
+    }
+}

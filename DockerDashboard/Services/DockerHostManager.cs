@@ -4,6 +4,7 @@ using DockerDashboard.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Caching.Memory;
 using System;
+using DockerDashboard.Services;
 
 namespace DockerDashboard.Data;
 
