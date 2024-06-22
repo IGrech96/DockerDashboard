@@ -1,10 +1,40 @@
-﻿@page "/container/{SnapshotId}/{ContainerId}"
-<h3>Container</h3>
+﻿@page "/container/{environmentId:long}/{containerId}"
+@using DockerDashboard.Components
+@using DockerDashboard.Data
+@using DockerDashboard.Services.DockerHost
+@using Microsoft.AspNetCore.Components.Sections
+
+@inject IDockerHostManager DockerHostManager 
+
+<SectionContent SectionName="page-toolbar">
+    <RadzenStack Orientation="Orientation.Horizontal">
+        <RadzenLabel Text="@($"Container {_containerDetails?.ContainerName.Trim('/')}")"></RadzenLabel>
+    </RadzenStack>
+</SectionContent>
+
+<ContainerDetails @ref="_containerDetailsComponent" EnvironmentId="environmentId" Container="@_containerDetails" CompactMode="false"></ContainerDetails>
 
 @code {
     [Parameter]
-    public string SnapshotId { get; set; }
+    public long environmentId { get; set; }
 
     [Parameter]
-    public string ContainerId { get; set; }
+    public string? containerId { get; set; }
+
+    private ContainerModel? _containerDetails { get; set; }
+    private ContainerDetails? _containerDetailsComponent { get; set; }
+
+    protected override Task OnInitializedAsync()
+    {
+        return base.OnInitializedAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+
+        _containerDetails = await DockerHostManager.GetContainerAsync(environmentId, containerId);
+
+        StateHasChanged();
+    }
 }

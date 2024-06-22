@@ -2,12 +2,19 @@
 @using DockerDashboard.Hubs
 @using DockerDashboard.Services
 @using DockerDashboard.Services.DockerHost
+@using DockerDashboard.Services.Environment
 @using Microsoft.AspNetCore.SignalR.Client
 @using Microsoft.AspNetCore.Components.Sections
 @inject NavigationManager Navigation
 @inject IDockerHostManager DockerHostManager
 @inject TooltipService TooltipService
+@inject IJSRuntime JSRuntime
 
+<style>
+    ul[role=tablist] {
+        flex-wrap: wrap;
+    }
+</style>
 @if (Container == null)
 {
     <SectionContent SectionName="page-details-sidebar">
@@ -28,13 +35,16 @@ else
                         <RadzenButton Text="@EnsureFullMode("Delete")" Icon="delete" MouseEnter="@(args => ShowTooltip(args,"Delete"))"></RadzenButton>
                             <RadzenButton Text="@EnsureFullMode("Restart")" Icon="restart_alt" MouseEnter="@(args => ShowTooltip(args,"Restart"))"></RadzenButton>
             </RadzenStack>
-            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End">
-                <RadzenButton Icon="open_in_new" MouseEnter="@(args => ShowTooltip(args, "Open in a new tab"))"></RadzenButton>
-                <RadzenButton Icon="close" Click="OnContainerDetailsClose" MouseEnter="@(args => ShowTooltip(args, "Close"))"></RadzenButton>
-            </RadzenStack>
+            @if (CompactMode)
+            {
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End">
+                    <RadzenButton Icon="open_in_new" MouseEnter="@(args => ShowTooltip(args, "Open in a new tab"))" Click="OnOpenInNewTab"></RadzenButton>
+                    <RadzenButton Icon="close" Click="OnContainerDetailsClose" MouseEnter="@(args => ShowTooltip(args, "Close"))"></RadzenButton>
+                </RadzenStack>
+            }
         </RadzenStack>
     </SectionContent>
-    <SectionContent SectionName="page-details-sidebar">
+    @* <SectionContent SectionName="page-details-sidebar"> *@
         <RadzenDataGrid Data="@_containerCommonInfo">
             <Columns>
                 <RadzenDataGridColumn Title="Name" Property="Name"></RadzenDataGridColumn>
@@ -67,13 +77,16 @@ else
                 <RadzenTabsItem Text="Files"></RadzenTabsItem>
             </Tabs>
         </RadzenTabs>
-    </SectionContent>
+    @* </SectionContent> *@
 }
 
 @code {
 
     [Parameter]
     public ContainerModel? Container { get; set; }
+
+    [Parameter]
+    public long? EnvironmentId { get; set; }
 
     [Parameter]
     public bool CompactMode { get; set; }
@@ -121,11 +134,11 @@ else
             _containerCommonInfo =
             [
                 new("ID", Container.ContainerId),
-        new ("Name", Container.ContainerName),
-        new ("Image", Container.ImageName),
-        new ("Status", Container.Status),
-        new ("Created", Container.Created),
-        new ("Start time", "")
+    new ("Name", Container.ContainerName),
+    new ("Image", Container.ImageName),
+    new ("Status", Container.Status),
+    new ("Created", Container.Created),
+    new ("Start time", "")
             ];
         }
         else
@@ -139,6 +152,12 @@ else
     {
         await base.OnInitializedAsync();
     }
+
+    protected async Task OnOpenInNewTab()
+    {
+        await JSRuntime.InvokeVoidAsync("open", Navigation.ToAbsoluteUri($"/container/{EnvironmentId}/{Container?.ContainerId}"), "_blank");
+    }
+
     private class CommonInfo(string name, object value)
     {
         public string Name { get; set; } = name;

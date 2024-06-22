@@ -22,15 +22,21 @@
 
 <RadzenLayout Style="grid-template-columns: 1fr auto; grid-template-areas: 'rz-header rz-sidebar' 'rz-body rz-sidebar'">
     <RadzenBody>
-        <ContainersGrid @ref="grid" EnvironmentId="environmentId" ContainerOpen="OnContainerOpen" ContainerUpdate="OnContainerUpdate"></ContainersGrid>
-    </RadzenBody>
-    <ContainerDetails @ref="containerDetailsComponent" Container="@_containerDetails" CompactMode="true" Close="OnContainerDetailsClose"></ContainerDetails>
+        <ContainersGrid @ref="grid" EnvironmentId="EnvironmentId" ContainerOpen="OnContainerOpen" ContainerUpdate="OnContainerUpdate"></ContainersGrid>
+    </RadzenBody>    
 </RadzenLayout>
+
+@if (_containerDetails != null)
+{
+    <SectionContent SectionName="page-details-sidebar">
+        <ContainerDetails @ref="containerDetailsComponent" EnvironmentId="@EnvironmentId" Container="@_containerDetails" CompactMode="true" Close="OnContainerDetailsClose"></ContainerDetails>
+    </SectionContent>
+}
 @code {
     // EventConsole console;
 
     [Parameter]
-    public long environmentId { get; set; }
+    public long EnvironmentId { get; set; }
 
     private ContainersGrid grid;
     private ContainerDetails containerDetailsComponent;

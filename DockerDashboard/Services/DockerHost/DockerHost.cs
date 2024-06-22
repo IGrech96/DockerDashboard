@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.SignalR;
 using System.Text;
 using System.Text.Json.Serialization;
 using DockerDashboard.Services.Environment;
+using System.Threading;
 
 namespace DockerDashboard.Services.DockerHost;
 
@@ -59,6 +60,18 @@ public class DockerHost
     }
 
     
+    public async Task<ContainerModel> GetContainer(string containerId, CancellationToken cancellationToken)
+    {
+        var data = await client_.Containers.ListContainersAsync(new ContainersListParameters()
+        {
+            Filters = new Dictionary<string, IDictionary<string, bool>>(){ {"id", new Dictionary<string, bool>() { {containerId, true } } } },
+            All=true,
+        }, cancellationToken);
+
+        return ToContainer(data.First());
+    }
+
+    
     internal async Task StopWatchingAsync(CancellationToken cancellationToken)
     {
         await cancellationTokenSource_.CancelAsync();
@@ -67,21 +80,11 @@ public class DockerHost
 
     private async Task OnDockerEventAsync(DockerMessage message, CancellationToken cancellationToken)
     {
-        async Task<ContainerModel> Get(string id)
-        {
-            var data = await client_.Containers.ListContainersAsync(new ContainersListParameters()
-            {
-                Filters = new Dictionary<string, IDictionary<string, bool>>(){ {"id", new Dictionary<string, bool>() { {id, true } } } },
-                All=true,
-            }, cancellationToken);
-
-            return ToContainer(data.First());
-        }
         ContainerEvent? @event = message.Status switch
         {
-            "create" => new CreateContainerEvent(message.ID, await Get(message.ID)),
+            "create" => new CreateContainerEvent(message.ID, await GetContainer(message.ID, cancellationToken)),
             "destroy" => new DestroyContainerEvent(message.ID),
-            _ when !string.IsNullOrWhiteSpace(message.ID) => new UpdateContainerEvent(message.ID, await Get(message.ID)),
+            _ when !string.IsNullOrWhiteSpace(message.ID) => new UpdateContainerEvent(message.ID, await GetContainer(message.ID, cancellationToken)),
             _ => null,
         };
         

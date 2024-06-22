@@ -12,6 +12,13 @@ public class DockerHostManager : IDockerHostManager
         dockerEnvironmentManager_ = dockerEnvironmentManager;
     }
 
+    public Task<ContainerModel> GetContainerAsync(long environment, string containerId)
+    {
+         var host = dockerEnvironmentManager_.GetHost(environment);
+
+        return host.GetContainer(containerId, CancellationToken.None);
+    }
+
     public IAsyncEnumerable<ContainerModel> GetContainers(long environment)
     {
         var host = dockerEnvironmentManager_.GetHost(environment);
