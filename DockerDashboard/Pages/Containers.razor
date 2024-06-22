@@ -20,10 +20,11 @@
         </RadzenStack>
     </RadzenHeader>
     <RadzenSidebar @ref="_sidebar" @bind-Expanded="@_sidebarExpanded" Responsive="false">
-        <RadzenStack AlignItems="AlignItems.End" Class="rz-p-2_sidebarExpanded">
-            <RadzenButton Icon="close" Variant="Variant.Text" ButtonStyle="ButtonStyle.Secondary" Click="OnContainerDetailsClose" />
-        </RadzenStack>
-        <ContainerDetails Container="@_containerDetails"></ContainerDetails>
+       @*  <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End" Orientation="Orientation.Horizontal" Class="rz-p-2_sidebarExpanded">
+            <RadzenButton Icon="open_in_new" Variant="Variant.Text" ButtonStyle="ButtonStyle.Secondary"></RadzenButton>
+            <RadzenButton Icon="close" Variant="Variant.Text" ButtonStyle="ButtonStyle.Secondary" Click="OnContainerDetailsClose"/>
+        </RadzenStack> *@
+        <ContainerDetails Container="@_containerDetails" CompactMode="true" Close="OnContainerDetailsClose"></ContainerDetails>
     </RadzenSidebar>
 </RadzenLayout>
 @code {
@@ -72,7 +73,7 @@
         StateHasChanged();
     }
 
-    private Task OnContainerDetailsClose(MouseEventArgs arg)
+    private Task OnContainerDetailsClose()
     {
         _sidebarExpanded = false;
         _containerDetails = null;
