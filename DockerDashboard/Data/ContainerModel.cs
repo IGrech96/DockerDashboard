@@ -15,21 +15,39 @@ public class ContainerModel
     public DateTime Created { get; set; }
 
     public (ushort localPort, ushort containerPort)[] Ports { get; set; }
+
+    public void Populate(ContainerModel other)
+    {
+        ContainerId = other.ContainerId;
+        ShortId = other.ShortId;
+        ContainerName = other.ContainerName;
+        ImageName = other.ImageName;
+        Status = other.Status;
+        Created = other.Created;
+        Ports = other.Ports;
+    }
 }
 
 public enum ContainerStatus
 {
+    Created,
+
     Starting,
 
     Running,
 
     Stoping,
 
-    Failed,
-
     Exited,
 
-    Stoped,
+    Restarted,
 
-    NA
+    Removing,
+
+    Dead,
+
+    Paused,
+
+    NA,
+    
 }

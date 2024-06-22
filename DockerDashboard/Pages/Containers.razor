@@ -1,6 +1,7 @@
 ﻿@page "/containers/{environmentid:long}"
 @using DockerDashboard.Data
 @using DockerDashboard.Components
+@using DockerDashboard.Hubs
 @using DockerDashboard.Services
 @using DockerDashboard.Services.DockerHost
 @using Microsoft.AspNetCore.Components.Sections
@@ -21,9 +22,9 @@
 
 <RadzenLayout Style="grid-template-columns: 1fr auto; grid-template-areas: 'rz-header rz-sidebar' 'rz-body rz-sidebar'">
     <RadzenBody>
-        <ContainersGrid @ref="grid" EnvironmentId="environmentId" OnContainerOpen="OnContainerOpen"></ContainersGrid>
+        <ContainersGrid @ref="grid" EnvironmentId="environmentId" ContainerOpen="OnContainerOpen" ContainerUpdate="OnContainerUpdate"></ContainersGrid>
     </RadzenBody>
-    <ContainerDetails Container="@_containerDetails" CompactMode="true" Close="OnContainerDetailsClose"></ContainerDetails>
+    <ContainerDetails @ref="containerDetailsComponent" Container="@_containerDetails" CompactMode="true" Close="OnContainerDetailsClose"></ContainerDetails>
 </RadzenLayout>
 @code {
     // EventConsole console;
@@ -32,6 +33,7 @@
     public long environmentId { get; set; }
 
     private ContainersGrid grid;
+    private ContainerDetails containerDetailsComponent;
     private ContainerModel? _containerDetails;
     private RadzenSidebar _sidebar;
 
@@ -50,6 +52,14 @@
         _containerDetails = arg;
         await PageDetailsNotificationService.OpenPageDetailsAsync();
         StateHasChanged();
+    }
+
+    private async Task OnContainerUpdate(ContainerEvent arg)
+    {
+        if (_containerDetails?.ContainerId == arg.ContainerId)
+        {
+            await containerDetailsComponent.UpdateAsync(arg);
+        }
     }
 
     private async Task OnContainerDetailsClose()

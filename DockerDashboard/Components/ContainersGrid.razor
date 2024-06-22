@@ -6,7 +6,7 @@
 @inject IDockerHostManager DockerHostManager
 @inject NavigationManager Navigation
 
-<RadzenDataGrid @ref=grid Data="@_orderedContainers" LoadData="@LoadData" Count="@count" AllowVirtualization="true" Style="height:400px"
+<RadzenDataGrid @ref=grid Data="@_orderedContainers" Count="@count" AllowVirtualization="true" Style="height:400px"
                 AllowFiltering="true" FilterPopupRenderMode="PopupRenderMode.OnDemand" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" LogicalFilterOperator="LogicalFilterOperator.Or"
                 AllowSorting="true">
     <Columns>
@@ -58,13 +58,16 @@
     public long? EnvironmentId { get; set; }
 
     [Parameter]
-    public Func<ContainerModel, Task>? OnContainerOpen { get; set; }
+    public Func<ContainerModel, Task>? ContainerOpen { get; set; }
+
+    [Parameter]
+    public Func<ContainerEvent, Task>? ContainerUpdate { get; set; }
 
     private async Task OpenContainer(ContainerModel model)
     {
-        if (OnContainerOpen != null)
+        if (ContainerOpen != null)
         {
-            await OnContainerOpen(model);
+            await ContainerOpen(model);
         }
     }
 
@@ -78,6 +81,8 @@
         _hubConnection.On<UpdateContainerEvent>($"{EnvironmentId}:container_update", OnContainerEvent);
         _hubConnection.On<CreateContainerEvent>($"{EnvironmentId}:container_update", OnContainerEvent);
         _hubConnection.On<DestroyContainerEvent>($"{EnvironmentId}:container_update", OnContainerEvent);
+
+
         await _hubConnection.StartAsync();
     }
 
@@ -86,28 +91,32 @@
         await base.OnAfterRenderAsync(firstRender);
         if (firstRender)
         {
-            await grid.RefreshDataAsync();
+            await RefreshDataAsync();
         }
     }
 
-    protected void OnContainerEvent(ContainerEvent @event)
+    protected async Task OnContainerEvent(ContainerEvent @event)
     {
-        //TODO: concurrency
+        // //TODO: concurrency
         if (@event is UpdateContainerEvent update)
         {
-            var index = _orderedContainers.FindIndex(m => m.ContainerId == update.ContainerId);
-            if (index >= 0)
+            var row = _orderedContainers?.FirstOrDefault(m => m.ContainerId == update.ContainerId);
+            if (row != null)
             {
-                _orderedContainers[index].Status = update.Container.Status;
-                grid.Reload();
-                InvokeAsync(StateHasChanged);
+                row.Populate(update.Container);
+                await InvokeAsync(async () =>
+                {
+                    await grid.Reload();
+                });
             }
         }
         else if (@event is CreateContainerEvent create)
         {
             _orderedContainers.Add(create.Container);
-            grid.Reload();
-            InvokeAsync(StateHasChanged);
+            await InvokeAsync(async () =>
+            {
+                await grid.Reload();
+            });
         }
         else if (@event is DestroyContainerEvent destroy)
         {
@@ -115,52 +124,28 @@
             if (index >= 0)
             {
                 _orderedContainers.RemoveAt(index);
-                grid.Reload();
-                InvokeAsync(StateHasChanged);
+                await InvokeAsync(async () =>
+                {
+                    await grid.Reload();
+                });
             }
         }
+
+        if (ContainerUpdate != null)
+        {
+            await ContainerUpdate(@event);
+        }
     }
 
-    string lastfilter;
-    protected async Task LoadData(LoadDataArgs args)
+    public async Task RefreshDataAsync()
     {
-        if (EnvironmentId == null)
+        if (EnvironmentId.HasValue)
         {
-            return;
+            _orderedContainers = await DockerHostManager.GetContainers(EnvironmentId.Value).ToListAsync();
+            await grid.Reload();
+
+            StateHasChanged();
         }
-        await Task.Yield();
-
-        if (!string.IsNullOrEmpty(args.Filter) && lastfilter != args.Filter)
-        {
-            args.Skip = 0;
-        }
-
-        var query = DockerHostManager.GetContainers(EnvironmentId.Value);
-
-
-        if (!string.IsNullOrEmpty(args.Filter))
-        {
-            lastfilter = args.Filter;
-            //query = query.Where(args.Filter);
-            //count = await Task.FromResult(query.Count());
-        }
-        else
-        {
-            //count = await Task.FromResult(dbContext.OrderDetails.Count());
-        }
-
-        // if (!string.IsNullOrEmpty(args.OrderBy))
-        // {
-        //     query = query.OrderBy(args.OrderBy);
-        // }
-
-        _orderedContainers = await query.Skip(args.Skip.Value).Take(args.Top.Value).ToListAsync();
-        count = _orderedContainers.Count();
-    }
-
-    public Task RefreshDataAsync()
-    {
-        return grid.RefreshDataAsync();
     }
 
 }

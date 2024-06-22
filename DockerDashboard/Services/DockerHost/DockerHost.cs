@@ -4,11 +4,7 @@ using DockerDashboard.Data;
 using DockerDashboard.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using System.Text;
-using System.Threading;
-using System;
-using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
-using System.ComponentModel;
 using DockerDashboard.Services.Environment;
 
 namespace DockerDashboard.Services.DockerHost;
@@ -96,9 +92,15 @@ public class DockerHost
 
     }
 
-    private Data.ContainerStatus MapStatus(string status) => status switch
+    private Data.ContainerStatus MapStatus(string status) => status.ToLower() switch
     {
-        {} d when d.StartsWith("Exited") => Data.ContainerStatus.Exited,
+        { } d when d.StartsWith("exited") => Data.ContainerStatus.Exited,
+        { } d when d.StartsWith("created") => Data.ContainerStatus.Created,
+        { } d when d.StartsWith("restarting") => Data.ContainerStatus.Restarted,
+        { } d when d.StartsWith("running") => Data.ContainerStatus.Running,
+        { } d when d.StartsWith("removing") => Data.ContainerStatus.Removing,
+        { } d when d.StartsWith("paused") => Data.ContainerStatus.Paused,
+        { } d when d.StartsWith("dead") => Data.ContainerStatus.Dead,
         _ => Data.ContainerStatus.NA
     };
 
@@ -109,7 +111,7 @@ public class DockerHost
             ContainerId = response.ID,
             ShortId = response.ID.Substring(0, 12),
             ContainerName = response.Names.First(), // todo,
-            Status = MapStatus(response.Status),
+            Status = MapStatus(response.State),
             Created = response.Created,
             ImageName = response.Image,
             Ports = response.Ports.Select(p => (p.PublicPort, p.PublicPort)).ToArray(), //todo
