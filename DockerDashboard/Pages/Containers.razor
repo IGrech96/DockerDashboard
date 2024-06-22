@@ -1,7 +1,8 @@
-﻿@page "/containers/{environmentid}"
+﻿@page "/containers/{environmentid:long}"
 @using DockerDashboard.Data
 @using DockerDashboard.Components
 @using DockerDashboard.Services
+@using DockerDashboard.Services.DockerHost
 @using Microsoft.AspNetCore.Components.Sections
 @inject IDockerHostManager DockerHostManager
 @inject IPageDetailsNotificationService PageDetailsNotificationService;
@@ -20,7 +21,7 @@
 
 <RadzenLayout Style="grid-template-columns: 1fr auto; grid-template-areas: 'rz-header rz-sidebar' 'rz-body rz-sidebar'">
     <RadzenBody>
-        <ContainersGrid @ref="grid" Snapshot="_snapshot" OnContainerOpen="OnContainerOpen"></ContainersGrid>
+        <ContainersGrid @ref="grid" EnvironmentId="environmentId" OnContainerOpen="OnContainerOpen"></ContainersGrid>
     </RadzenBody>
     <ContainerDetails Container="@_containerDetails" CompactMode="true" Close="OnContainerDetailsClose"></ContainerDetails>
 </RadzenLayout>
@@ -28,40 +29,15 @@
     // EventConsole console;
 
     [Parameter]
-    public string environmentid { get; set; }
+    public long environmentId { get; set; }
 
-    [CascadingParameter]
-    public RadzenStack Layout { get; set; }
-    
-    private bool _initialized = false;
     private ContainersGrid grid;
     private ContainerModel? _containerDetails;
-    private bool _sidebarExpanded = false;
-    
-
-    private ContainersSnapshot? _snapshot;
     private RadzenSidebar _sidebar;
-    public bool DeleteDialogOpen { get; set; }
-
-    private async Task OnDeleteDialogClose(bool accepted)
-    {
-        if (accepted)
-        {
-            // await WebRequestMethods.Http.DeleteAsync($"api/containers/{_containerToDelete.Id}");
-            // await LoadData();
-            // _containerToDelete = null;
-        }
-
-        DeleteDialogOpen = false;
-        StateHasChanged();
-    }
 
     protected override async Task OnInitializedAsync()
     {
-        _snapshot = await DockerHostManager.GetContainersSnapshot();
-        await grid.RefreshDataAsync();
-
-        _initialized = true;
+        //await grid.RefreshDataAsync();
     }
 
     public async void Refresh()
@@ -72,7 +48,6 @@
     private async Task OnContainerOpen(ContainerModel arg)
     {
         _containerDetails = arg;
-        _sidebarExpanded = true;
         await PageDetailsNotificationService.OpenPageDetailsAsync();
         StateHasChanged();
     }
@@ -80,7 +55,6 @@
     private async Task OnContainerDetailsClose()
     {
         await PageDetailsNotificationService.ClosePageDetailsAsync();
-        _sidebarExpanded = false;
         _containerDetails = null;
 
         

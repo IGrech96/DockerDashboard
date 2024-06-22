@@ -1,8 +1,12 @@
 ﻿@using DockerDashboard.Data
+@using DockerDashboard.Hubs
 @using DockerDashboard.Services
+@using DockerDashboard.Services.DockerHost
+@using Microsoft.AspNetCore.SignalR.Client
 @inject IDockerHostManager DockerHostManager
+@inject NavigationManager Navigation
 
-<RadzenDataGrid @ref=grid Data="@orderContainers" LoadData="@LoadData" Count="@count" AllowVirtualization="true" Style="height:400px"
+<RadzenDataGrid @ref=grid Data="@_orderedContainers" LoadData="@LoadData" Count="@count" AllowVirtualization="true" Style="height:400px"
                 AllowFiltering="true" FilterPopupRenderMode="PopupRenderMode.OnDemand" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" LogicalFilterOperator="LogicalFilterOperator.Or"
                 AllowSorting="true">
     <Columns>
@@ -47,10 +51,11 @@
 @code {
     private RadzenDataGrid<ContainerModel> grid;
     private int count;
-    private IEnumerable<ContainerModel> orderContainers;
+    private List<ContainerModel> _orderedContainers;
+    private HubConnection _hubConnection;
 
     [Parameter]
-    public ContainersSnapshot? Snapshot { get; set; }
+    public long? EnvironmentId { get; set; }
 
     [Parameter]
     public Func<ContainerModel, Task>? OnContainerOpen { get; set; }
@@ -63,15 +68,63 @@
         }
     }
 
-    protected override Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync()
     {
-        return base.OnInitializedAsync();
+        await base.OnInitializedAsync();
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/containerDetailsHub"))
+            .Build();
+
+        _hubConnection.On<UpdateContainerEvent>($"{EnvironmentId}:container_update", OnContainerEvent);
+        _hubConnection.On<CreateContainerEvent>($"{EnvironmentId}:container_update", OnContainerEvent);
+        _hubConnection.On<DestroyContainerEvent>($"{EnvironmentId}:container_update", OnContainerEvent);
+        await _hubConnection.StartAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+        if (firstRender)
+        {
+            await grid.RefreshDataAsync();
+        }
+    }
+
+    protected void OnContainerEvent(ContainerEvent @event)
+    {
+        //TODO: concurrency
+        if (@event is UpdateContainerEvent update)
+        {
+            var index = _orderedContainers.FindIndex(m => m.ContainerId == update.ContainerId);
+            if (index >= 0)
+            {
+                _orderedContainers[index].Status = update.Container.Status;
+                grid.Reload();
+                InvokeAsync(StateHasChanged);
+            }
+        }
+        else if (@event is CreateContainerEvent create)
+        {
+            _orderedContainers.Add(create.Container);
+            grid.Reload();
+            InvokeAsync(StateHasChanged);
+        }
+        else if (@event is DestroyContainerEvent destroy)
+        {
+            var index = _orderedContainers.FindIndex(m => m.ContainerId == destroy.ContainerId);
+            if (index >= 0)
+            {
+                _orderedContainers.RemoveAt(index);
+                grid.Reload();
+                InvokeAsync(StateHasChanged);
+            }
+        }
     }
 
     string lastfilter;
-    async Task LoadData(LoadDataArgs args)
+    protected async Task LoadData(LoadDataArgs args)
     {
-        if (Snapshot == null)
+        if (EnvironmentId == null)
         {
             return;
         }
@@ -82,8 +135,7 @@
             args.Skip = 0;
         }
 
-        var query = DockerHostManager
-            .GetContainers(Snapshot.SnapshotId);
+        var query = DockerHostManager.GetContainers(EnvironmentId.Value);
 
 
         if (!string.IsNullOrEmpty(args.Filter))
@@ -102,8 +154,8 @@
         //     query = query.OrderBy(args.OrderBy);
         // }
 
-        orderContainers = await query.Skip(args.Skip.Value).Take(args.Top.Value).ToListAsync();
-        count = orderContainers.Count();
+        _orderedContainers = await query.Skip(args.Skip.Value).Take(args.Top.Value).ToListAsync();
+        count = _orderedContainers.Count();
     }
 
     public Task RefreshDataAsync()

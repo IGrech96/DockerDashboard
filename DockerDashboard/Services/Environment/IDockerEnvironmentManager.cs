@@ -2,10 +2,10 @@
 
 public interface IDockerEnvironmentManager
 {
-    IAsyncEnumerable<DockerEnvironemnt> GetAllEnvironmentsAsync(CancellationToken cancellationToken);
+    IAsyncEnumerable<DockerEnvironment> GetAllEnvironmentsAsync(CancellationToken cancellationToken);
 }
 
-public record struct DockerEnvironemnt
+public record struct DockerEnvironment
 {
     public long Id { get; set; }
 

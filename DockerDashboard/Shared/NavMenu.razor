@@ -28,7 +28,7 @@
 </div>
 
 @code {
-    private DockerEnvironemnt[] _environemnts = [];
+    private DockerEnvironment[] _environemnts = [];
     protected override async Task OnInitializedAsync()
     {
         _environemnts = await DockerEnvironmentManager.GetAllEnvironmentsAsync(CancellationToken.None).ToArrayAsync();

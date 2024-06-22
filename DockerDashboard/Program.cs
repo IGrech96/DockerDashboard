@@ -1,6 +1,7 @@
 using DockerDashboard.Data;
 using DockerDashboard.Hubs;
 using DockerDashboard.Services;
+using DockerDashboard.Services.DockerHost;
 using DockerDashboard.Services.Environment;
 using Radzen;
 
