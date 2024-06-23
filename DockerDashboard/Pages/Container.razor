@@ -1,10 +1,15 @@
 ﻿@page "/container/{environmentId:long}/{containerId}"
 @using DockerDashboard.Components
 @using DockerDashboard.Data
+@using DockerDashboard.Hubs
 @using DockerDashboard.Services.DockerHost
 @using Microsoft.AspNetCore.Components.Sections
+@using Microsoft.AspNetCore.SignalR.Client
 
+@inject NavigationManager Navigation
 @inject IDockerHostManager DockerHostManager 
+
+ @implements IAsyncDisposable
 
 <SectionContent SectionName="page-toolbar">
     <RadzenStack Orientation="Orientation.Horizontal">
@@ -21,12 +26,32 @@
     [Parameter]
     public string? containerId { get; set; }
 
-    private ContainerModel? _containerDetails { get; set; }
-    private ContainerDetails? _containerDetailsComponent { get; set; }
+    private ContainerModel? _containerDetails;
+    private ContainerDetails? _containerDetailsComponent;
+    private HubConnection _hubConnection;
+    private bool _isWatchEnabled = false;
 
-    protected override Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync()
     {
-        return base.OnInitializedAsync();
+        await base.OnInitializedAsync();
+
+        _hubConnection = new HubConnectionBuilder()
+           .WithUrl(Navigation.ToAbsoluteUri("/containerDetailsHub"))
+           .Build();
+
+        _hubConnection.On<UpdateContainerEvent>(HubRouting.ContainerUpdateMethod(environmentId), OnContainerEvent);
+        _hubConnection.On<CreateContainerEvent>(HubRouting.ContainerUpdateMethod(environmentId), OnContainerEvent);
+        _hubConnection.On<ContainerLogEvent>(HubRouting.ContainerLogMethod(environmentId), OnContainerEvent);
+
+        await _hubConnection.StartAsync();
+    }
+
+    protected async Task OnContainerEvent(ContainerEvent @event)
+    {
+        if (_containerDetails?.ContainerId == @event.ContainerId)
+        {
+            await _containerDetailsComponent.UpdateAsync(@event);
+        }
     }
 
     protected override async Task OnParametersSetAsync()
@@ -34,7 +59,11 @@
         await base.OnParametersSetAsync();
 
         _containerDetails = await DockerHostManager.GetContainerAsync(environmentId, containerId);
-
         StateHasChanged();
+    }
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        await _hubConnection.DisposeAsync();
     }
 }

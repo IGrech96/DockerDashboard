@@ -10,6 +10,8 @@
 @inject TooltipService TooltipService
 @inject IJSRuntime JSRuntime
 
+@implements IDisposable
+
 <style>
     ul[role=tablist] {
         flex-wrap: wrap;
@@ -68,7 +70,15 @@ else
         </RadzenDataGrid>
         <RadzenTabs TabPosition="TabPosition.Top" RenderMode="TabRenderMode.Client">
             <Tabs>
-                <RadzenTabsItem Text="Logs"></RadzenTabsItem>
+                <RadzenTabsItem Text="Logs">
+                    <RadzenDataList AllowVirtualization="true" Style="height:400px;overflow:auto;"
+                                    WrapItems="false" AllowPaging="false"
+                                    Data="_logs" TItem="string" PagerHorizontalAlign="HorizontalAlign.Left">
+                                    <Template Context="log">
+                                        @log
+                                    </Template>
+                    </RadzenDataList>
+                </RadzenTabsItem>
                 <RadzenTabsItem Text="Details"></RadzenTabsItem>
                 <RadzenTabsItem Text="Inspect"></RadzenTabsItem>
                 <RadzenTabsItem Text="Stats"></RadzenTabsItem>
@@ -95,6 +105,10 @@ else
     public Func<Task>? Close { get; set; }
 
     private CommonInfo[] _containerCommonInfo = [];
+
+    private List<string> _logs = [];
+    private readonly CancellationTokenSource _timerCancellationToken = new();
+    private DateTimeOffset _previousOffset = new DateTimeOffset(0, TimeSpan.Zero);
 
     public async Task UpdateAsync(ContainerEvent @event)
     {
@@ -125,6 +139,32 @@ else
     {
         await base.OnParametersSetAsync();
         await ReloadAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (firstRender)
+        {
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(10));
+            while (!_timerCancellationToken.IsCancellationRequested && await timer.WaitForNextTickAsync())
+            {
+                if (EnvironmentId.HasValue && Container != null)
+                {
+                    var now = DateTimeOffset.UtcNow;
+                    var logs = await DockerHostManager.GetContainerLogsAsync(EnvironmentId.Value, Container.ContainerId, _previousOffset, now);
+                    _previousOffset = now;
+
+                    //TODO
+                    _logs.AddRange(logs);
+
+                    await InvokeAsync(StateHasChanged);
+                }                
+            }
+            // Make sure any subsequent logic is not called after the component is disposed
+            return;
+        }
     }
 
     protected async Task ReloadAsync()
@@ -171,6 +211,13 @@ else
         {
             await Close();
         }
+    }
+
+    public void Dispose()
+    {
+        _timerCancellationToken.Cancel();
+        _timerCancellationToken.Dispose();
+        GC.SuppressFinalize(this);
     }
 
 }

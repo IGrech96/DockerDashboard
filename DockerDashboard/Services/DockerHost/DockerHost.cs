@@ -7,31 +7,72 @@ using System.Text;
 using System.Text.Json.Serialization;
 using DockerDashboard.Services.Environment;
 using System.Threading;
+using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
+using System.IO;
 
 namespace DockerDashboard.Services.DockerHost;
 
 public class DockerHost
 {
+    private class CancellationTokenWrapper(CancellationTokenSource cancellationTokenSource)
+    {
+        private int _connected;
+
+        public CancellationTokenSource CancellationTokenSource { get; } = cancellationTokenSource;
+
+        public int Up() => Interlocked.Increment(ref _connected);
+
+        public int Down() => Interlocked.Decrement(ref _connected);
+    }
     private readonly IDockerClient client_;
     private readonly IHubContext<ContainerDetailsHub> containerDetailsHub_;
     private readonly DockerEnvironment environment_;
-    private CancellationTokenSource cancellationTokenSource_;
+    private CancellationTokenSource watchContainerEventsTokenSource;
+    private readonly ConcurrentDictionary<string, CancellationTokenWrapper> watchLogsTokenSources_;
 
     public DockerHost(IHubContext<ContainerDetailsHub> containerDetailsHub, DockerEnvironment environment)
     {
         client_ = new DockerClientConfiguration().CreateClient();
         containerDetailsHub_ = containerDetailsHub;
         environment_ = environment;
+        watchLogsTokenSources_ = new ();
     }
 
     internal async Task StartWatchingAsync(CancellationToken cancellationToken)
     {
-        cancellationTokenSource_ = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        //client_.System.MonitorEventsAsync(new ContainerEventsParameters(), new Progress<Message>(OnDockerEvent), cancellationTokenSource_.Token);
+        watchContainerEventsTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-        MonitorEventsAsync(cancellationTokenSource_.Token);
+        MonitorEventsAsync(watchContainerEventsTokenSource.Token);
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
     }
+
+    internal async Task<string[]> GetLogsAsync(string containerId, DateTimeOffset since, DateTimeOffset until, CancellationToken cancellationToken)
+    {
+        using var multiStream = await client_.Containers.GetContainerLogsAsync(containerId, false, new ContainerLogsParameters
+        {
+            ShowStderr = true,
+            ShowStdout = true,
+            Timestamps = true,
+            Since = since.ToUnixTimeSeconds().ToString(),
+            Until = until.ToUnixTimeSeconds().ToString()
+        },
+        cancellationToken);
+
+        var results = new List<string>();
+        var underlyingStream = multiStream.GetStream();
+        using var reader = new StreamReader(underlyingStream, Encoding.UTF8, false);
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            var line = await reader.ReadLineAsync(cancellationToken);
+            if (line is null) break;
+           results.Add(line);
+        }
+
+        return results.ToArray();
+    }
+
+   
 
     private async Task MonitorEventsAsync(CancellationToken cancellationToken)
     {
@@ -71,13 +112,12 @@ public class DockerHost
         return ToContainer(data.First());
     }
 
-    
+
     internal async Task StopWatchingAsync(CancellationToken cancellationToken)
     {
-        await cancellationTokenSource_.CancelAsync();
+        await watchContainerEventsTokenSource.CancelAsync();
         client_.Dispose();
     }
-
     private async Task OnDockerEventAsync(DockerMessage message, CancellationToken cancellationToken)
     {
         ContainerEvent? @event = message.Status switch
@@ -90,7 +130,7 @@ public class DockerHost
         
         if (@event is not null) 
         {
-           await containerDetailsHub_.Clients.All.SendAsync($"{environment_.Id}:container_update", @event, cancellationToken);
+           await containerDetailsHub_.Clients.All.SendAsync(HubRouting.ContainerUpdateMethod(environment_.Id), @event, cancellationToken);
         }
 
     }
@@ -160,4 +200,12 @@ public class DockerHost
         public IDictionary<string, string> Attributes { get; set; }
     }
 
+}
+
+public static class MultiplexedStreamExtensions
+{
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_stream")]
+    static extern ref Stream stream_(MultiplexedStream stream); 
+
+    public static Stream GetStream(this MultiplexedStream stream) => stream_(stream);
 }

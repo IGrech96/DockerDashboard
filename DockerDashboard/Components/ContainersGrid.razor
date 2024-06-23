@@ -52,16 +52,12 @@
     private RadzenDataGrid<ContainerModel> grid;
     private int count;
     private List<ContainerModel> _orderedContainers;
-    private HubConnection _hubConnection;
 
     [Parameter]
     public long? EnvironmentId { get; set; }
 
     [Parameter]
     public Func<ContainerModel, Task>? ContainerOpen { get; set; }
-
-    [Parameter]
-    public Func<ContainerEvent, Task>? ContainerUpdate { get; set; }
 
     private async Task OpenContainer(ContainerModel model)
     {
@@ -74,16 +70,6 @@
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-        _hubConnection = new HubConnectionBuilder()
-            .WithUrl(Navigation.ToAbsoluteUri("/containerDetailsHub"))
-            .Build();
-
-        _hubConnection.On<UpdateContainerEvent>($"{EnvironmentId}:container_update", OnContainerEvent);
-        _hubConnection.On<CreateContainerEvent>($"{EnvironmentId}:container_update", OnContainerEvent);
-        _hubConnection.On<DestroyContainerEvent>($"{EnvironmentId}:container_update", OnContainerEvent);
-
-
-        await _hubConnection.StartAsync();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -95,7 +81,7 @@
         }
     }
 
-    protected async Task OnContainerEvent(ContainerEvent @event)
+    public async Task UpdateContainerAsync(ContainerEvent @event)
     {
         // //TODO: concurrency
         if (@event is UpdateContainerEvent update)
@@ -129,11 +115,6 @@
                     await grid.Reload();
                 });
             }
-        }
-
-        if (ContainerUpdate != null)
-        {
-            await ContainerUpdate(@event);
         }
     }
 

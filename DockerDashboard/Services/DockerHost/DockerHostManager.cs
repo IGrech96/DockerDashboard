@@ -26,4 +26,10 @@ public class DockerHostManager : IDockerHostManager
         return host.GetContainers(CancellationToken.None);
     }
 
+    public Task<string[]> GetContainerLogsAsync(long environment, string containerId, DateTimeOffset since, DateTimeOffset until)
+    {
+        var host = dockerEnvironmentManager_.GetHost(environment);
+
+        return host.GetLogsAsync(containerId, since, until, CancellationToken.None);
+    }
 }

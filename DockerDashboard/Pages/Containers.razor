@@ -5,8 +5,10 @@
 @using DockerDashboard.Services
 @using DockerDashboard.Services.DockerHost
 @using Microsoft.AspNetCore.Components.Sections
+@using Microsoft.AspNetCore.SignalR.Client
 @inject IDockerHostManager DockerHostManager
 @inject IPageDetailsNotificationService PageDetailsNotificationService;
+@inject NavigationManager Navigation;
 
 <style>
     .rz-grid-table {
@@ -22,7 +24,7 @@
 
 <RadzenLayout Style="grid-template-columns: 1fr auto; grid-template-areas: 'rz-header rz-sidebar' 'rz-body rz-sidebar'">
     <RadzenBody>
-        <ContainersGrid @ref="grid" EnvironmentId="EnvironmentId" ContainerOpen="OnContainerOpen" ContainerUpdate="OnContainerUpdate"></ContainersGrid>
+        <ContainersGrid @ref="grid" EnvironmentId="EnvironmentId" ContainerOpen="OnContainerOpen"></ContainersGrid>
     </RadzenBody>    
 </RadzenLayout>
 
@@ -42,10 +44,23 @@
     private ContainerDetails containerDetailsComponent;
     private ContainerModel? _containerDetails;
     private RadzenSidebar _sidebar;
+    private HubConnection _hubConnection;
 
     protected override async Task OnInitializedAsync()
     {
-        //await grid.RefreshDataAsync();
+        await base.OnInitializedAsync();
+
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/containerDetailsHub"))
+            .Build();
+
+        _hubConnection.On<UpdateContainerEvent>(HubRouting.ContainerUpdateMethod(EnvironmentId), OnContainerUpdate);
+        _hubConnection.On<CreateContainerEvent>(HubRouting.ContainerUpdateMethod(EnvironmentId), OnContainerUpdate);
+        _hubConnection.On<DestroyContainerEvent>(HubRouting.ContainerUpdateMethod(EnvironmentId), OnContainerUpdate);
+        _hubConnection.On<ContainerLogEvent>(HubRouting.ContainerLogMethod(EnvironmentId), OnContainerUpdate);
+
+
+        await _hubConnection.StartAsync();
     }
 
     public async void Refresh()
@@ -62,6 +77,7 @@
 
     private async Task OnContainerUpdate(ContainerEvent arg)
     {
+        await grid.UpdateContainerAsync(arg);
         if (_containerDetails?.ContainerId == arg.ContainerId)
         {
             await containerDetailsComponent.UpdateAsync(arg);
