@@ -16,6 +16,10 @@
     ul[role=tablist] {
         flex-wrap: wrap;
     }
+
+    .box {
+        overflow-wrap: break-word;
+    }
 </style>
 @if (Container == null)
 {
@@ -34,8 +38,8 @@ else
             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Start">
                 <RadzenButton Text="@EnsureFullMode(ChooseMenuText("Run", "Stop"))" Icon="@ChooseMenuText("play_arrow", "stop")" MouseEnter="@(args => ShowTooltip(args,ChooseMenuText("Run", "Stop")))"></RadzenButton>
                 <RadzenButton Text="@EnsureFullMode(ChooseMenuText("Resume", "Pause"))" Icon="@ChooseMenuText("play_arrow", "pause")" MouseEnter="@(args => ShowTooltip(args,ChooseMenuText("Resume", "Pause")))"></RadzenButton>
-                        <RadzenButton Text="@EnsureFullMode("Delete")" Icon="delete" MouseEnter="@(args => ShowTooltip(args,"Delete"))"></RadzenButton>
-                            <RadzenButton Text="@EnsureFullMode("Restart")" Icon="restart_alt" MouseEnter="@(args => ShowTooltip(args,"Restart"))"></RadzenButton>
+                <RadzenButton Text="@EnsureFullMode("Delete")" Icon="delete" MouseEnter="@(args => ShowTooltip(args,"Delete"))"></RadzenButton>
+                <RadzenButton Text="@EnsureFullMode("Restart")" Icon="restart_alt" MouseEnter="@(args => ShowTooltip(args,"Restart"))"></RadzenButton>
             </RadzenStack>
             @if (CompactMode)
             {
@@ -47,46 +51,79 @@ else
         </RadzenStack>
     </SectionContent>
     @* <SectionContent SectionName="page-details-sidebar"> *@
-        <RadzenDataGrid Data="@_containerCommonInfo">
-            <Columns>
-                <RadzenDataGridColumn Title="Name" Property="Name"></RadzenDataGridColumn>
-                <RadzenDataGridColumn Title="Value" Property="Value">
-                    <Template Context="data">
-                        @if (data.Value is DateTime dateTime)
-                        {
-                            @dateTime.ToString("yyyy-MM-dd hh:mm:ss")
-                        }
-                        else if (data is { Name: "Image", Value: not null })
-                        {
-                            <a href="">@data.Value.ToString()!.TrimStart('/')</a>
-                        }
-                        else
-                        {
-                            @data.Value?.ToString()
-                        }
-                    </Template>
-                </RadzenDataGridColumn>
-            </Columns>
-        </RadzenDataGrid>
-        <RadzenTabs TabPosition="TabPosition.Top" RenderMode="TabRenderMode.Client">
-            <Tabs>
-                <RadzenTabsItem Text="Logs">
+    <RadzenDataGrid Data="@_containerCommonInfo">
+        <Columns>
+            <RadzenDataGridColumn Title="Name" Property="Name"></RadzenDataGridColumn>
+            <RadzenDataGridColumn Title="Value" Property="Value">
+                <Template Context="data">
+                    @if (data.Value is DateTime dateTime)
+                    {
+                        @dateTime.ToString("yyyy-MM-dd hh:mm:ss")
+                    }
+                    else if (data is { Name: "Image", Value: not null })
+                    {
+                        <a href="">@data.Value.ToString()!.TrimStart('/')</a>
+                    }
+                    else
+                    {
+                        @data.Value?.ToString()
+                    }
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+    <RadzenTabs TabPosition="TabPosition.Top" RenderMode="TabRenderMode.Client" Change="OnTabChange">
+        <Tabs>
+            <RadzenTabsItem Text="Logs">
+
+                @if (_logsLoaded)
+                {
                     <RadzenDataList AllowVirtualization="true" Style="height:400px;overflow:auto;"
                                     WrapItems="false" AllowPaging="false"
                                     Data="_logs" TItem="string" PagerHorizontalAlign="HorizontalAlign.Left">
-                                    <Template Context="log">
-                                        @log
-                                    </Template>
+                        <Template Context="log">
+                            <div class="box">@log</div>
+                        </Template>
                     </RadzenDataList>
-                </RadzenTabsItem>
-                <RadzenTabsItem Text="Details"></RadzenTabsItem>
-                <RadzenTabsItem Text="Inspect"></RadzenTabsItem>
-                <RadzenTabsItem Text="Stats"></RadzenTabsItem>
-                <RadzenTabsItem Text="Volumes"></RadzenTabsItem>
-                <RadzenTabsItem Text="Networks"></RadzenTabsItem>
-                <RadzenTabsItem Text="Files"></RadzenTabsItem>
-            </Tabs>
-        </RadzenTabs>
+                }
+                else
+                {
+                    <RadzenStack AlignItems="AlignItems.Center">
+                        <RadzenProgressBarCircular ShowValue="true" Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Large">
+                            <Template>Loading...</Template>
+                        </RadzenProgressBarCircular>
+                    </RadzenStack>
+
+                }
+            </RadzenTabsItem>
+            <RadzenTabsItem Text="Details">
+                <RadzenDataGrid Data="@_containerDetailedInfo" Render="@OnRender">
+                    <Columns>
+                        <RadzenDataGridColumn Title="Name" Property="Name"></RadzenDataGridColumn>
+                        <RadzenDataGridColumn Title="Value" Property="Value">
+                            <Template Context="data">
+                                @if (data.Value is DateTime dateTime)
+                                {
+                                    @dateTime.ToString("yyyy-MM-dd hh:mm:ss")
+                                }
+                                else if (data is { Name: "Image", Value: not null })
+                                {
+                                    <a href="">@data.Value.ToString()!.TrimStart('/')</a>
+                                }
+                                else
+                                {
+                                    @data.Value?.ToString()
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenTabsItem>
+            <RadzenTabsItem Text="Inspect"></RadzenTabsItem>
+            <RadzenTabsItem Text="Stats"></RadzenTabsItem>
+            <RadzenTabsItem Text="Files"></RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
     @* </SectionContent> *@
 }
 
@@ -105,10 +142,12 @@ else
     public Func<Task>? Close { get; set; }
 
     private CommonInfo[] _containerCommonInfo = [];
+    private DetailedInfo[] _containerDetailedInfo = [];
 
     private List<string> _logs = [];
     private readonly CancellationTokenSource _timerCancellationToken = new();
     private DateTimeOffset _previousOffset = new DateTimeOffset(0, TimeSpan.Zero);
+    private bool _logsLoaded = false;
 
     public async Task UpdateAsync(ContainerEvent @event)
     {
@@ -135,6 +174,42 @@ else
 
     private void ShowTooltip(ElementReference elementReference, string text, TooltipOptions? options = null) => TooltipService.Open(elementReference, text, options);
 
+    private void OnRender(DataGridRenderEventArgs<DetailedInfo> args)
+    {
+        if (args.FirstRender)
+        {
+            args.Grid.Groups.Add(new GroupDescriptor() { Property = "Category" });
+            StateHasChanged();
+        }
+    }
+
+    protected async Task OnTabChange(int index)
+    {
+        if (index == 1)
+        {
+            if (EnvironmentId.HasValue && Container != null)
+            {
+                var details = await DockerHostManager.GetContainerDetails(EnvironmentId.Value, Container.ContainerId);
+                _containerDetailedInfo =
+                 [
+    new ("Common", "EntryPoint", string.Join(" ", details.EntryPoint)),
+    new ("Common", "Command", string.Join(" ", details.Command)),
+    new ("Common", "Restart policy", details.RestartPolicy),
+    new ("Common", "Restarts count", details.RestartCount),
+    new ("Common", "User", details.User),
+    new ("Common", "Working Directory", details.WorkingDirectory),
+    ..details.Environment.Select(r => new DetailedInfo("Environment", r.Key, r.Value)),
+    ..details.Labels.Select(r => new DetailedInfo("Labels", r.Key, r.Value))
+                ];
+            }
+            else
+            {
+                _containerDetailedInfo = [];
+            }
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
     protected override async Task OnParametersSetAsync()
     {
         await base.OnParametersSetAsync();
@@ -147,6 +222,16 @@ else
 
         if (firstRender)
         {
+            if (EnvironmentId.HasValue && Container != null)
+            {
+                var now = DateTimeOffset.UtcNow;
+                var logs = await DockerHostManager.GetContainerLogsAsync(EnvironmentId.Value, Container.ContainerId, _previousOffset, now);
+                _previousOffset = now;
+                _logs.AddRange(logs);
+                _logsLoaded = true;
+                await InvokeAsync(StateHasChanged);
+            }
+
             using var timer = new PeriodicTimer(TimeSpan.FromSeconds(10));
             while (!_timerCancellationToken.IsCancellationRequested && await timer.WaitForNextTickAsync())
             {
@@ -158,9 +243,9 @@ else
 
                     //TODO
                     _logs.AddRange(logs);
-
+                    _logsLoaded = true;
                     await InvokeAsync(StateHasChanged);
-                }                
+                }
             }
             // Make sure any subsequent logic is not called after the component is disposed
             return;
@@ -200,6 +285,15 @@ else
 
     private class CommonInfo(string name, object value)
     {
+        public string Name { get; set; } = name;
+
+        public object? Value { get; set; } = value;
+    }
+
+    private class DetailedInfo(string category, string name, object value)
+    {
+        public string Category { get; set; } = category;
+
         public string Name { get; set; } = name;
 
         public object? Value { get; set; } = value;

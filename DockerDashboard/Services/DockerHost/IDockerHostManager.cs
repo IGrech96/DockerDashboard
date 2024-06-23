@@ -9,4 +9,6 @@ public interface IDockerHostManager
     Task<ContainerModel> GetContainerAsync(long environment, string containerId);
 
     Task<string[]> GetContainerLogsAsync(long environment, string containerId, DateTimeOffset since, DateTimeOffset until);
+
+    Task<ContainerDetailedModel> GetContainerDetails(long environment, string containerId);
 }

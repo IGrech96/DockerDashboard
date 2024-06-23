@@ -15,28 +15,16 @@ namespace DockerDashboard.Services.DockerHost;
 
 public class DockerHost
 {
-    private class CancellationTokenWrapper(CancellationTokenSource cancellationTokenSource)
-    {
-        private int _connected;
-
-        public CancellationTokenSource CancellationTokenSource { get; } = cancellationTokenSource;
-
-        public int Up() => Interlocked.Increment(ref _connected);
-
-        public int Down() => Interlocked.Decrement(ref _connected);
-    }
     private readonly IDockerClient client_;
     private readonly IHubContext<ContainerDetailsHub> containerDetailsHub_;
     private readonly DockerEnvironment environment_;
     private CancellationTokenSource watchContainerEventsTokenSource;
-    private readonly ConcurrentDictionary<string, CancellationTokenWrapper> watchLogsTokenSources_;
 
     public DockerHost(IHubContext<ContainerDetailsHub> containerDetailsHub, DockerEnvironment environment)
     {
         client_ = new DockerClientConfiguration().CreateClient();
         containerDetailsHub_ = containerDetailsHub;
         environment_ = environment;
-        watchLogsTokenSources_ = new ();
     }
 
     internal async Task StartWatchingAsync(CancellationToken cancellationToken)
@@ -112,6 +100,14 @@ public class DockerHost
         return ToContainer(data.First());
     }
 
+    public async Task<ContainerDetailedModel> GetContainerDetails(string containerId, CancellationToken cancellationToken)
+    {
+        var data = await client_.Containers.InspectContainerAsync(containerId, cancellationToken);
+
+        var result = ToContainer(data);
+        return result;
+    }
+
 
     internal async Task StopWatchingAsync(CancellationToken cancellationToken)
     {
@@ -146,6 +142,41 @@ public class DockerHost
         { } d when d.StartsWith("dead") => Data.ContainerStatus.Dead,
         _ => Data.ContainerStatus.NA
     };
+
+    private ContainerDetailedModel ToContainer(ContainerInspectResponse response)
+    {
+        return new ContainerDetailedModel()
+        {
+            ContainerId = response.ID,
+            ShortId = response.ID.Substring(0, 12),
+            ContainerName = response.Name,
+            Status = MapStatus(response.State.Status),
+            Created = response.Created,
+            ImageName = response.Image,
+            EntryPoint = response.Config.Entrypoint.ToArray(),
+            WorkingDirectory = response.Config.WorkingDir,
+            Command = response.Config.Cmd.ToArray(),
+            User = response.Config.User,
+            Environment = ConvertEnvironment(),
+            Labels = new (response.Config.Labels),
+            RestartCount = response.RestartCount,
+            RestartPolicy = response.HostConfig.RestartPolicy.Name,
+            Mounts = response.Mounts.ToArray(),
+            //Networks = response.NetworkSettings.
+            //Ports = response.Config.Ports.Select(p => (p.PublicPort, p.PublicPort)).ToArray(), //todo
+        };
+
+        Dictionary<string, string> ConvertEnvironment()
+        {
+            return response
+                .Config
+                .Env
+                .Where(d => d.Contains("="))
+                .Select(d => d.Split("=") is {Length: > 1} array ? (array[0], string.Join("=", array.Skip(1))) : ("", ""))
+                .DistinctBy(_ => _.Item1)
+                .ToDictionary(_ => _.Item1, _ => _.Item2);
+        }
+    }
 
     private ContainerModel ToContainer(ContainerListResponse response)
     {
