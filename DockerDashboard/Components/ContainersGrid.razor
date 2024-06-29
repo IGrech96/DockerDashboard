@@ -1,10 +1,9 @@
 ﻿@using DockerDashboard.Data
 @using DockerDashboard.Hubs
-@using DockerDashboard.Services
 @using DockerDashboard.Services.DockerHost
-@using Microsoft.AspNetCore.SignalR.Client
 @inject IDockerHostManager DockerHostManager
 @inject NavigationManager Navigation
+@inject ContextMenuService ContextMenuService
 
 <RadzenDataGrid @ref=grid Data="@_orderedContainers" Count="@count" AllowVirtualization="true" Style="height:400px"
                 AllowFiltering="true" FilterPopupRenderMode="PopupRenderMode.OnDemand" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" LogicalFilterOperator="LogicalFilterOperator.Or"
@@ -25,6 +24,16 @@
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn Property="Status" Title="Status">
+            <Template Context="data">
+                @if (data.Status is ContainerStatus.NA )
+                {
+                    <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" />                        
+                }
+                else
+                {
+                    @data.Status.ToString()
+                }
+            </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn Title="Port(s)">
             <Template Context="data">
@@ -38,11 +47,11 @@
         </RadzenDataGridColumn>
         <RadzenDataGridColumn Property="Created" Title="Created">
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn Title="Actions" Filterable="false" Sortable="false" Frozen="true">
+        <RadzenDataGridColumn Title="Actions" Filterable="false" Sortable="false" Frozen="true" >
             <Template Context="data">
-                <RadzenButton Icon="play_arrow" ButtonStyle="ButtonStyle.Light"></RadzenButton>
-                <RadzenButton Icon="more_vert" ButtonStyle="ButtonStyle.Light"></RadzenButton>
-                <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Light"></RadzenButton>
+                <RadzenButton Disabled="@(!ToolbarEnabled(data))" Click="@(() => StartStop(data))"  Icon="@ChooseMenuText(data, "play_arrow", "stop")" ButtonStyle="ButtonStyle.Light"></RadzenButton>
+                <RadzenButton Disabled="@(!ToolbarEnabled(data))" Click="@(args => OpenMenu(args, data))" Icon="more_vert" ButtonStyle="ButtonStyle.Light"></RadzenButton>
+                <RadzenButton Disabled="@(!ToolbarEnabled(data))" Click="@(() => Delete(data))" Icon="delete" ButtonStyle="ButtonStyle.Light"></RadzenButton>
             </Template>
         </RadzenDataGridColumn>
     </Columns>
@@ -127,6 +136,62 @@
 
             StateHasChanged();
         }
+    }
+
+    private string ChooseMenuText(ContainerModel container, string activate, string diactivate)
+    {
+        if (container?.Status == ContainerStatus.Running)
+        {
+            return diactivate;
+        }
+        return activate;
+    }
+
+    private Task OpenMenu(MouseEventArgs args, ContainerModel data)
+    {
+        var menu = new List<ContextMenuItem>();
+        if (data.Status == ContainerStatus.Running)
+        {
+            menu.Add(new ContextMenuItem() { Text = "Pause", Value = "Pause", Icon = "pause" });
+        }
+
+
+        ContextMenuService.Open(args, menu,
+            (e) =>
+            {
+                //console.Log($"Menu item with Value={e.Value} clicked. Tree item: {args.Text}, EmployeeID: {((Employee)args.Value).EmployeeID}");
+            }
+        );
+
+        return Task.CompletedTask;
+    }
+
+    private async Task StartStop(ContainerModel data)
+    {
+        if (data.Status == ContainerStatus.Running)
+        {
+            data.Status = ContainerStatus.NA;
+            StateHasChanged();
+            await DockerHostManager.StopContainerAsync(EnvironmentId!.Value, data.ContainerId);
+        }
+        else
+        {
+            data.Status = ContainerStatus.NA;
+            StateHasChanged();
+            await DockerHostManager.StartContainerAsync(EnvironmentId!.Value, data.ContainerId);
+        }
+    }
+
+    private async Task Delete(ContainerModel data)
+    {
+        data.Status = ContainerStatus.NA;
+        StateHasChanged();
+        await DockerHostManager.DeleteContainerAsync(EnvironmentId!.Value, data.ContainerId);
+    }
+
+    private bool ToolbarEnabled(ContainerModel data)
+    {
+        return data.Status != ContainerStatus.NA;
     }
 
 }

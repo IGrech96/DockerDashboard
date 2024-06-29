@@ -6,10 +6,7 @@ using Microsoft.AspNetCore.SignalR;
 using System.Text;
 using System.Text.Json.Serialization;
 using DockerDashboard.Services.Environment;
-using System.Threading;
-using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
-using System.IO;
 
 namespace DockerDashboard.Services.DockerHost;
 
@@ -35,7 +32,7 @@ public class DockerHost
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
     }
 
-    internal async Task<string[]> GetLogsAsync(string containerId, DateTimeOffset since, DateTimeOffset until, CancellationToken cancellationToken)
+    internal async IAsyncEnumerable<string> GetLogsAsync(string containerId, DateTimeOffset since, DateTimeOffset until, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         using var multiStream = await client_.Containers.GetContainerLogsAsync(containerId, false, new ContainerLogsParameters
         {
@@ -47,17 +44,18 @@ public class DockerHost
         },
         cancellationToken);
 
-        var results = new List<string>();
+        //var results = new List<string>();
         var underlyingStream = multiStream.GetStream();
         using var reader = new StreamReader(underlyingStream, Encoding.UTF8, false);
         while (!cancellationToken.IsCancellationRequested)
         {
             var line = await reader.ReadLineAsync(cancellationToken);
             if (line is null) break;
-           results.Add(line);
+            yield return line;
+            //results.Add(line);
         }
 
-        return results.ToArray();
+        //return results.ToArray();
     }
 
    
@@ -106,6 +104,31 @@ public class DockerHost
 
         var result = ToContainer(data);
         return result;
+    }
+
+    public async Task PauseContainerAsync(string containerId, CancellationToken cancellationToken)
+    {
+        await client_.Containers.PauseContainerAsync(containerId, cancellationToken);
+    }
+
+    public async Task StopContainerAsync(string containerId, CancellationToken cancellationToken)
+    {
+        await client_.Containers.StopContainerAsync(containerId, new(), cancellationToken);
+    }
+
+    public async Task StartContainerAsync(string containerId, CancellationToken cancellationToken)
+    {
+        await client_.Containers.StartContainerAsync(containerId, new(), cancellationToken);
+    }
+
+    public async Task DeleteContainerAsync(string containerId, CancellationToken cancellationToken)
+    {
+        await client_.Containers.RemoveContainerAsync(containerId, new(), cancellationToken);
+    }
+
+    public async Task RestartContainerAsync(string containerId, CancellationToken cancellationToken)
+    {
+        await client_.Containers.RestartContainerAsync(containerId, new(), cancellationToken);
     }
 
 
