@@ -1,9 +1,8 @@
-﻿@using Docker.DotNet.Models
-@using DockerDashboard.Data
-@using DockerDashboard.Hubs
-@using DockerDashboard.Services.DockerHost
+﻿@using DockerDashboard.Shared.Data
+@using DockerDashboard.Shared.Hubs
+@using DockerDashboard.Shared.Services.DockerHost
 @using Microsoft.AspNetCore.Components.Sections
-@using ContainerStatus = DockerDashboard.Data.ContainerStatus
+@using ContainerStatus = DockerDashboard.Shared.Data.ContainerStatus
 @inject NavigationManager Navigation
 @inject IDockerHostManager DockerHostManager
 @inject TooltipService TooltipService

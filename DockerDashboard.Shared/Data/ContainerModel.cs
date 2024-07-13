@@ -1,5 +1,5 @@
 ﻿
-namespace DockerDashboard.Data;
+namespace DockerDashboard.Shared.Data;
 
 public class ContainerModel
 {

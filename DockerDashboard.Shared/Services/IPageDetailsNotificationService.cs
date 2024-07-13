@@ -1,5 +1,4 @@
-﻿namespace DockerDashboard.Services;
-
+﻿
 public interface IPageDetailsNotificationService
 {
     event Func<Task> PageDetailsOpen;

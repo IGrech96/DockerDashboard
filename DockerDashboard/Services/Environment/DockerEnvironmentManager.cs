@@ -1,5 +1,5 @@
 ﻿using DockerDashboard.Hubs;
-using DockerDashboard.Services.DockerHost;
+using DockerDashboard.Shared.Services.Environment;
 using Microsoft.AspNetCore.SignalR;
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;

@@ -1,4 +1,4 @@
-﻿namespace DockerDashboard.Services.Environment;
+﻿namespace DockerDashboard.Shared.Services.Environment;
 
 public interface IDockerEnvironmentManager
 {

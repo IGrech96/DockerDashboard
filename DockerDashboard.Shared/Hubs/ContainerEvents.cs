@@ -1,6 +1,6 @@
-﻿using DockerDashboard.Data;
+﻿using DockerDashboard.Shared.Data;
 
-namespace DockerDashboard.Hubs;
+namespace DockerDashboard.Shared.Hubs;
 
 public abstract class ContainerEvent(string containerId)
 {

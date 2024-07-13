@@ -1,4 +1,4 @@
-﻿namespace DockerDashboard.Hubs;
+﻿namespace DockerDashboard.Shared.Hubs;
 
 public static class HubRouting
 {

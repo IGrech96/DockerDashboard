@@ -1,10 +1,8 @@
 ﻿@page "/containers/{environmentid:long}"
-@using DockerDashboard.Data
-@using DockerDashboard.Components
-@using DockerDashboard.Hubs
-@using DockerDashboard.Services
-@using DockerDashboard.Services.DockerHost
-@using Microsoft.AspNetCore.Components.Sections
+@using DockerDashboard.Shared.Services.DockerHost
+@using DockerDashboard.Ui.Components
+@using DockerDashboard.Shared.Hubs
+@using DockerDashboard.Shared.Data
 @using Microsoft.AspNetCore.SignalR.Client
 @inject IDockerHostManager DockerHostManager
 @inject IPageDetailsNotificationService PageDetailsNotificationService;

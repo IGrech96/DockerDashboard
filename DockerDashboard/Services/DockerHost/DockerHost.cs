@@ -1,12 +1,14 @@
 ﻿using Docker.DotNet;
 using Docker.DotNet.Models;
-using DockerDashboard.Data;
 using DockerDashboard.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using System.Text;
 using System.Text.Json.Serialization;
 using DockerDashboard.Services.Environment;
 using System.Runtime.CompilerServices;
+using DockerDashboard.Shared.Data;
+using DockerDashboard.Shared.Hubs;
+using DockerDashboard.Shared.Services.Environment;
 
 namespace DockerDashboard.Services.DockerHost;
 
@@ -154,16 +156,16 @@ public class DockerHost
 
     }
 
-    private Data.ContainerStatus MapStatus(string status) => status.ToLower() switch
+    private Shared.Data.ContainerStatus MapStatus(string status) => status.ToLower() switch
     {
-        { } d when d.StartsWith("exited") => Data.ContainerStatus.Exited,
-        { } d when d.StartsWith("created") => Data.ContainerStatus.Created,
-        { } d when d.StartsWith("restarting") => Data.ContainerStatus.Restarted,
-        { } d when d.StartsWith("running") => Data.ContainerStatus.Running,
-        { } d when d.StartsWith("removing") => Data.ContainerStatus.Removing,
-        { } d when d.StartsWith("paused") => Data.ContainerStatus.Paused,
-        { } d when d.StartsWith("dead") => Data.ContainerStatus.Dead,
-        _ => Data.ContainerStatus.NA
+        { } d when d.StartsWith("exited") => Shared.Data.ContainerStatus.Exited,
+        { } d when d.StartsWith("created") => Shared.Data.ContainerStatus.Created,
+        { } d when d.StartsWith("restarting") => Shared.Data.ContainerStatus.Restarted,
+        { } d when d.StartsWith("running") => Shared.Data.ContainerStatus.Running,
+        { } d when d.StartsWith("removing") => Shared.Data.ContainerStatus.Removing,
+        { } d when d.StartsWith("paused") => Shared.Data.ContainerStatus.Paused,
+        { } d when d.StartsWith("dead") => Shared.Data.ContainerStatus.Dead,
+        _ => Shared.Data.ContainerStatus.NA
     };
 
     private ContainerDetailedModel ToContainer(ContainerInspectResponse response)
@@ -183,8 +185,8 @@ public class DockerHost
             Environment = ConvertEnvironment(),
             Labels = new (response.Config.Labels),
             RestartCount = response.RestartCount,
-            RestartPolicy = response.HostConfig.RestartPolicy.Name,
-            Mounts = response.Mounts.ToArray(),
+            RestartPolicy = MapRestartPolicy(response.HostConfig.RestartPolicy.Name),
+            Mounts = response.Mounts.Select(MapMountPoint).ToArray(),
             //Networks = response.NetworkSettings.
             //Ports = response.Config.Ports.Select(p => (p.PublicPort, p.PublicPort)).ToArray(), //todo
         };
@@ -199,6 +201,34 @@ public class DockerHost
                 .DistinctBy(_ => _.Item1)
                 .ToDictionary(_ => _.Item1, _ => _.Item2);
         }
+    }
+
+    private Shared.Data.MountPoint MapMountPoint(Docker.DotNet.Models.MountPoint point)
+    {
+        return new Shared.Data.MountPoint
+        {
+            Destination = point.Destination,
+            Driver = point.Driver,
+            Mode = point.Mode,
+            Name = point.Name,
+            Propagation = point.Propagation,
+            RW = point.RW,
+            Source = point.Source,
+            Type = point.Type,
+        };
+    }
+
+    private Shared.Data.RestartPolicy MapRestartPolicy(RestartPolicyKind name)
+    {
+        return name switch
+        {
+            RestartPolicyKind.Undefined => Shared.Data.RestartPolicy.Undefined,
+            RestartPolicyKind.No => Shared.Data.RestartPolicy.No,
+            RestartPolicyKind.Always => Shared.Data.RestartPolicy.Always,
+            RestartPolicyKind.OnFailure => Shared.Data.RestartPolicy.OnFailure,
+            RestartPolicyKind.UnlessStopped => Shared.Data.RestartPolicy.UnlessStopped,
+            _ => Shared.Data.RestartPolicy.Undefined,
+        };
     }
 
     private ContainerModel ToContainer(ContainerListResponse response)

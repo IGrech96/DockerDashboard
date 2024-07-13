@@ -1,5 +1,6 @@
 ﻿using DockerDashboard.Services.Environment;
-using DockerDashboard.Data;
+using DockerDashboard.Shared.Data;
+using DockerDashboard.Shared.Services.DockerHost;
 
 namespace DockerDashboard.Services.DockerHost;
 

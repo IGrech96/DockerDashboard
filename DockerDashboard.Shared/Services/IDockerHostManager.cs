@@ -1,6 +1,6 @@
-﻿using DockerDashboard.Data;
+﻿using DockerDashboard.Shared.Data;
 
-namespace DockerDashboard.Services.DockerHost;
+namespace DockerDashboard.Shared.Services.DockerHost;
 
 public interface IDockerHostManager
 {
