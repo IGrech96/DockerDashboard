@@ -1,9 +1,6 @@
 ﻿@using DockerDashboard.Shared.Data
 @using DockerDashboard.Shared.Hubs
 @using DockerDashboard.Shared.Services
-@using DockerDashboard.Ui.Clients
-@using DockerDashboard.Ui.Services
-
 @inject IDockerHostManager DockerHostManager
 @inject NavigationManager Navigation
 @inject ContextMenuService ContextMenuService
@@ -134,7 +131,7 @@
     {
         if (EnvironmentId.HasValue)
         {
-            _orderedContainers = await DockerHostManager.GetContainers(EnvironmentId.Value, CancellationToken.None).ToListAsync();
+            _orderedContainers = await DockerHostManager.GetContainers(EnvironmentId.Value, null, null, CancellationToken.None).ToListAsync();
             await grid.Reload();
 
             StateHasChanged();

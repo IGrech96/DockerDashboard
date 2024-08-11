@@ -1,9 +1,6 @@
 ﻿@using DockerDashboard.Shared.Data
-@using DockerDashboard.Shared.Hubs
 @using DockerDashboard.Shared.Services
-@using DockerDashboard.Ui.Clients
 @using DockerDashboard.Ui.Services
-@using Microsoft.AspNetCore.Components.Sections
 @using ContainerStatus = DockerDashboard.Shared.Data.ContainerStatus
 @inject NavigationManager Navigation
 @inject IDockerHostManager DockerHostManager
@@ -12,192 +9,116 @@
 
 @implements IDisposable
 
-<style>
-    ul[role=tablist] {
-        flex-wrap: wrap;
-    }
-
-    .box {
-        overflow-wrap: break-word;
-    }
-</style>
-@if (Container == null)
-{
-    <SectionContent SectionName="page-details-sidebar">
-        <RadzenStack AlignItems="AlignItems.Center">
-            <RadzenProgressBarCircular ShowValue="true" Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Large">
-                <Template>Loading...</Template>
-            </RadzenProgressBarCircular>
-        </RadzenStack>
-    </SectionContent>
-}
-else
-{
-    <SectionContent SectionName="page-details-toolbar">
-        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
-            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Start">
-                <RadzenSplitButton Disabled="@(!ToolBarEnabled)" Click=@(args => RunStopContainer(args)) Text="@EnsureFullMode(ChooseMenuText("Start", "Stop"))" Icon="@ChooseMenuText("play_arrow", "stop")" MouseEnter="@(args => ShowTooltip(args,ChooseMenuText("Start", "Stop")))">
-                    <ChildContent>
-                        @if (Container?.Status == ContainerStatus.Running)
-                        {
-                            <RadzenSplitButtonItem Text="Pause" Icon="pause" Value="Pause"/>
-                        }
-                    </ChildContent>
-                </RadzenSplitButton>
-                <RadzenButton Disabled="@(!ToolBarEnabled)" Click="@Delete" Text="@EnsureFullMode("Delete")" Icon="delete" MouseEnter="@(args => ShowTooltip(args,"Delete"))"></RadzenButton>
-                <RadzenButton Disabled="@(!ToolBarEnabled)" Click="@Restart" Text="@EnsureFullMode("Restart")" Icon="restart_alt" MouseEnter="@(args => ShowTooltip(args,"Restart"))"></RadzenButton>
-            </RadzenStack>
-            @if (CompactMode)
-            {
-                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End">
-                    <RadzenButton Icon="open_in_new" MouseEnter="@(args => ShowTooltip(args, "Open in a new tab"))" Click="OnOpenInNewTab"></RadzenButton>
-                    <RadzenButton Icon="close" Click="OnContainerDetailsClose" MouseEnter="@(args => ShowTooltip(args, "Close"))"></RadzenButton>
-                </RadzenStack>
-            }
-        </RadzenStack>
-    </SectionContent>
-    <RadzenDataGrid Data="@_containerCommonInfo">
-        <Columns>
-            <RadzenDataGridColumn Title="Name" Property="Name"></RadzenDataGridColumn>
-            <RadzenDataGridColumn Title="Value" Property="Value">
-                <Template Context="data">
-                    @if (data.Value is DateTime dateTime)
-                    {
-                        @dateTime.ToString("yyyy-MM-dd hh:mm:ss")
-                    }
-                    else if (data is { Name: "Image", Value: not null })
-                    {
-                        <a href="">@data.Value.ToString()!.TrimStart('/')</a>
-                    }
-                    else if (data is { Name: "Status", Value: ContainerStatus.NA })
-                    {
-                        <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" />                        
-                    }
-                    else
-                    {
-                        @data.Value?.ToString()
-                    }
-                </Template>
-            </RadzenDataGridColumn>
-        </Columns>
-    </RadzenDataGrid>
-    <RadzenTabs TabPosition="TabPosition.Top" RenderMode="TabRenderMode.Client" Change="OnTabChange">
-        <Tabs>
-            <RadzenTabsItem Text="Logs">
-
-                @if (_logsLoaded)
+<RadzenDataGrid Data="@_containerCommonInfo">
+    <Columns>
+        <RadzenDataGridColumn Title="Name" Property="Name"></RadzenDataGridColumn>
+        <RadzenDataGridColumn Title="Value" Property="Value">
+            <Template Context="data">
+                @if (data.Value is DateTime dateTime)
                 {
-                    <RadzenDataList AllowVirtualization="true" Style="height:400px;overflow:auto;"
-                                    WrapItems="false" AllowPaging="false"
-                                    Data="_logs" TItem="string" PagerHorizontalAlign="HorizontalAlign.Left">
-                        <Template Context="log">
-                            <div class="box">@log</div>
-                        </Template>
-                    </RadzenDataList>
+                    @dateTime.ToString("yyyy-MM-dd hh:mm:ss")
+                }
+                else if (data is { Name: "Image", Value: not null })
+                {
+                    <a href="">@data.Value.ToString()!.TrimStart('/')</a>
+                }
+                else if (data is { Name: "Status", Value: ContainerStatus.NA })
+                {
+                    <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" />
                 }
                 else
                 {
-                    <RadzenStack AlignItems="AlignItems.Center">
-                        <RadzenProgressBarCircular ShowValue="true" Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Large">
-                            <Template>Loading...</Template>
-                        </RadzenProgressBarCircular>
-                    </RadzenStack>
-
+                    @data.Value?.ToString()
                 }
-            </RadzenTabsItem>
-            <RadzenTabsItem Text="Details">
-                <RadzenDataGrid Data="@_containerDetailedInfo" Render="@OnRender">
-                    <Columns>
-                        <RadzenDataGridColumn Title="Name" Property="Name"></RadzenDataGridColumn>
-                        <RadzenDataGridColumn Title="Value" Property="Value">
-                            <Template Context="data">
-                                @if (data.Value is DateTime dateTime)
-                                {
-                                    @dateTime.ToString("yyyy-MM-dd hh:mm:ss")
-                                }
-                                else if (data is { Name: "Image", Value: not null })
-                                {
-                                    <a href="">@data.Value.ToString()!.TrimStart('/')</a>
-                                }
-                                else if (data.Value is MountPoint mount)
-                                {
-                                    <p>type=@mount.Type,source=@mount.Source,target=@mount.Destination </p>
-                                    <p>Readonly=@(!mount.RW)</p>
-                                    <p>Propagation=@mount.Propagation</p>
-                                }
-                                else if (data is { Name: "Status", Value: ContainerStatus.NA })
-                                {
-                                    <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" />                        
-                                }
-                                else
-                                {
-                                    @data.Value?.ToString()
-                                }
-                            </Template>
-                        </RadzenDataGridColumn>
-                    </Columns>
-                </RadzenDataGrid>
-            </RadzenTabsItem>
-            <RadzenTabsItem Text="Inspect"></RadzenTabsItem>
-            <RadzenTabsItem Text="Stats"></RadzenTabsItem>
-            <RadzenTabsItem Text="Files"></RadzenTabsItem>
-        </Tabs>
-    </RadzenTabs>
-}
+            </Template>
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>
+<RadzenTabs TabPosition="TabPosition.Top" RenderMode="TabRenderMode.Client" Change="OnTabChange">
+    <Tabs>
+        <RadzenTabsItem Text="Logs">
+
+            @if (_logsLoaded)
+            {
+                <RadzenDataList AllowVirtualization="true" Style="height:400px;overflow:auto;"
+                                WrapItems="false" AllowPaging="false"
+                                Data="_logs" TItem="string" PagerHorizontalAlign="HorizontalAlign.Left">
+                    <Template Context="log">
+                        <div class="box">@log</div>
+                    </Template>
+                </RadzenDataList>
+            }
+            else
+            {
+                <RadzenStack AlignItems="AlignItems.Center">
+                    <RadzenProgressBarCircular ShowValue="true" Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Large">
+                        <Template>Loading...</Template>
+                    </RadzenProgressBarCircular>
+                </RadzenStack>
+
+            }
+        </RadzenTabsItem>
+        <RadzenTabsItem Text="Details">
+            <RadzenDataGrid Data="@_containerDetailedInfo" Render="@OnRender">
+                <Columns>
+                    <RadzenDataGridColumn Title="Name" Property="Name"></RadzenDataGridColumn>
+                    <RadzenDataGridColumn Title="Value" Property="Value">
+                        <Template Context="data">
+                            @if (data.Value is DateTime dateTime)
+                            {
+                                @dateTime.ToString("yyyy-MM-dd hh:mm:ss")
+                            }
+                            else if (data is { Name: "Image", Value: not null })
+                            {
+                                <a href="">@data.Value.ToString()!.TrimStart('/')</a>
+                            }
+                            else if (data.Value is MountPoint mount)
+                            {
+                                <p>type=@mount.Type,source=@mount.Source,target=@mount.Destination </p>
+                                <p>Readonly=@(!mount.RW)</p>
+                                <p>Propagation=@mount.Propagation</p>
+                            }
+                            else if (data is { Name: "Status", Value: ContainerStatus.NA })
+                            {
+                                <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" />
+                            }
+                            else
+                            {
+                                @data.Value?.ToString()
+                            }
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </RadzenTabsItem>
+        <RadzenTabsItem Text="Inspect"></RadzenTabsItem>
+        <RadzenTabsItem Text="Stats"></RadzenTabsItem>
+        <RadzenTabsItem Text="Files"></RadzenTabsItem>
+    </Tabs>
+</RadzenTabs>
 
 @code {
 
-    [Parameter]
-    public ContainerModel? Container { get; set; }
+    [Parameter] public ContainerModel? Container { get; set; }
 
-    [Parameter]
-    public long? EnvironmentId { get; set; }
-
-    [Parameter]
-    public bool CompactMode { get; set; }
-
-    [Parameter]
-    public Func<Task>? Close { get; set; }
+    [Parameter] public long? EnvironmentId { get; set; }
 
     private CommonInfo[] _containerCommonInfo = [];
     private DetailedInfo[] _containerDetailedInfo = [];
-
-    private List<string> _logs = [];
-    private readonly CancellationTokenSource _timerCancellationToken = new();
-    private DateTimeOffset _previousOffset = new DateTimeOffset(0, TimeSpan.Zero);
     private bool _logsLoaded = false;
 
+    private List<string> _logs = [];
+    // private readonly CancellationTokenSource _timerCancellationToken = new();
+    // private DateTimeOffset _previousOffset = new DateTimeOffset(0, TimeSpan.Zero);
 
-    private bool ToolBarEnabled => Container != null && Container.Status != ContainerStatus.NA;
 
-    public async Task UpdateAsync(ContainerEvent @event)
+    protected override async Task OnParametersSetAsync()
     {
-        if (@event is UpdateContainerEvent update)
-        {
-            Container = update.Container;
-            await ReloadAsync();
-        }
-        else if (@event is DestroyContainerEvent)
-        {
-            await OnContainerDetailsClose();
-        }
+        await base.OnParametersSetAsync();
+        await ReloadAsync();
+        
     }
 
-    private string ChooseMenuText(string activate, string diactivate)
-    {
-        if (Container?.Status == ContainerStatus.Running)
-        {
-            return diactivate;
-        }
-        return activate;
-    }
-
-    private string? EnsureFullMode(string? activate)
-    {
-        return CompactMode ? null : activate;
-    }
-
-    private void ShowTooltip(ElementReference elementReference, string text, TooltipOptions? options = null) => TooltipService.Open(elementReference, text, options);
 
     private void OnRender(DataGridRenderEventArgs<DetailedInfo> args)
     {
@@ -208,97 +129,7 @@ else
         }
     }
 
-    protected async Task OnTabChange(int index)
-    {
-        if (index == 1)
-        {
-            if (EnvironmentId.HasValue && Container != null)
-            {
-                var details = await DockerHostManager.GetContainerDetails(EnvironmentId.Value, Container.ContainerId);
-                _containerDetailedInfo =
-                [
-                    new("Common", "EntryPoint", string.Join(" ", details.EntryPoint)),
-                    new("Common", "Command", string.Join(" ", details.Command)),
-                    new("Common", "Restart policy", details.RestartPolicy),
-                    new("Common", "Restarts count", details.RestartCount),
-                    new("Common", "User", details.User),
-                    new("Common", "Working Directory", details.WorkingDirectory),
-                    ..details.Environment.Select(r => new DetailedInfo("Environment", r.Key, r.Value)),
-                    ..details.Labels.Select(r => new DetailedInfo("Labels", r.Key, r.Value)),
-                    ..details.Mounts.Select(r => new DetailedInfo("Mounts", r.Name, r)),
-                ];
-            }
-            else
-            {
-                _containerDetailedInfo = [];
-            }
-            await InvokeAsync(StateHasChanged);
-        }
-    }
-
-    protected override async Task OnParametersSetAsync()
-    {
-        await base.OnParametersSetAsync();
-        await ReloadAsync();
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        await base.OnAfterRenderAsync(firstRender);
-
-        if (firstRender)
-        {
-            if (EnvironmentId.HasValue && Container != null)
-            {
-                var now = DateTimeOffset.UtcNow;
-                var logsEnumeration = DockerHostManager.GetContainerLogsAsync(EnvironmentId.Value, Container.ContainerId, _previousOffset, now);
-                var counter = 0;
-                await foreach (var log in logsEnumeration)
-                {
-                    _logsLoaded = true;
-                    _logs.Add(log);
-                    counter++;
-
-                    if (counter % 100 == 0)
-                    {
-                        await InvokeAsync(StateHasChanged);
-                    }
-                }
-                _previousOffset = now;
-                
-                await InvokeAsync(StateHasChanged);
-            }
-
-            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(10));
-            while (!_timerCancellationToken.IsCancellationRequested && await timer.WaitForNextTickAsync())
-            {
-                if (EnvironmentId.HasValue && Container != null)
-                {
-                    var now = DateTimeOffset.UtcNow;
-                    var logsEnumeration = DockerHostManager.GetContainerLogsAsync(EnvironmentId.Value, Container.ContainerId, _previousOffset, now);
-                    var counter = 0;
-                    await foreach (var log in logsEnumeration)
-                    {
-                        _logsLoaded = true;
-                        _logs.Add(log);
-                        counter++;
-
-                        if (counter % 100 == 0)
-                        {
-                            await InvokeAsync(StateHasChanged);
-                        }
-                    }
-                    _previousOffset = now;
-                
-                    await InvokeAsync(StateHasChanged);
-                }
-            }
-            // Make sure any subsequent logic is not called after the component is disposed
-            return;
-        }
-    }
-
-    protected async Task ReloadAsync()
+    public async Task ReloadAsync()
     {
         if (Container != null)
         {
@@ -316,92 +147,98 @@ else
         {
             _containerCommonInfo = [];
         }
+
         await InvokeAsync(StateHasChanged);
     }
 
-    protected override async Task OnInitializedAsync()
+    protected async Task OnTabChange(int index)
     {
-        await base.OnInitializedAsync();
-    }
-
-    protected async Task OnOpenInNewTab()
-    {
-        await JSRuntime.InvokeVoidAsync("open", Navigation.ToAbsoluteUri($"/container/{EnvironmentId}/{Container?.ContainerId}"), "_blank");
-    }
-
-    private class CommonInfo(string name, object value)
-    {
-        public string Name { get; set; } = name;
-
-        public object? Value { get; set; } = value;
-    }
-
-    private class DetailedInfo(string category, string name, object value)
-    {
-        public string Category { get; set; } = category;
-
-        public string Name { get; set; } = name;
-
-        public object? Value { get; set; } = value;
-    }
-
-    private async Task OnContainerDetailsClose()
-    {
-        if (Close != null)
+        if (index == 1)
         {
-            await Close();
-        }
-    }
-
-    private async Task RunStopContainer(RadzenSplitButtonItem? args)
-    {
-        if (Container?.Status == ContainerStatus.Running)
-        {
-            if (args is { Value: "Pause" })
+            if (EnvironmentId.HasValue && Container != null)
             {
-                Container.Status = ContainerStatus.NA;
-                StateHasChanged();
-                await DockerHostManager.PauseContainerAsync(EnvironmentId!.Value, Container.ContainerId);
+                var details = await DockerHostManager.GetContainerDetails(EnvironmentId.Value, Container.ContainerId, CancellationToken.None);
+                _containerDetailedInfo =
+                [
+                    new("Common", "EntryPoint", string.Join(" ", details.EntryPoint)),
+                    new("Common", "Command", string.Join(" ", details.Command)),
+                    new("Common", "Restart policy", details.RestartPolicy),
+                    new("Common", "Restarts count", details.RestartCount),
+                    new("Common", "User", details.User),
+                    new("Common", "Working Directory", details.WorkingDirectory),
+                    ..details.Environment.Select(r => new DetailedInfo("Environment", r.Key, r.Value)),
+                    ..details.Labels.Select(r => new DetailedInfo("Labels", r.Key, r.Value)),
+                    ..details.Mounts.Select(r => new DetailedInfo("Mounts", r.Name, r)),
+                ];
             }
             else
             {
-                Container.Status = ContainerStatus.NA;
-                StateHasChanged();
-                await DockerHostManager.StopContainerAsync(EnvironmentId!.Value, Container.ContainerId);
+                _containerDetailedInfo = [];
             }
-        }
-        else if (Container != null)
-        {
-            Container.Status = ContainerStatus.NA;
-            StateHasChanged();
-            await DockerHostManager.StartContainerAsync(EnvironmentId!.Value, Container.ContainerId);
+
+            await InvokeAsync(StateHasChanged);
         }
     }
 
-    private async Task Delete()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (Container != null)
-        {
-            Container.Status = ContainerStatus.NA;
-            StateHasChanged();
-            await DockerHostManager.DeleteContainerAsync(EnvironmentId!.Value, Container.ContainerId);
-        }
-    }
+        await base.OnAfterRenderAsync(firstRender);
 
-    private async Task Restart()
-    {
-        if (Container != null)
-        {
-            Container.Status = ContainerStatus.NA;
-            StateHasChanged();
-            await DockerHostManager.RestartContainerAsync(EnvironmentId!.Value, Container.ContainerId);
-        }
+        // if (firstRender)
+        // {
+        //     if (EnvironmentId.HasValue && Container != null)
+        //     {
+        //         var now = DateTimeOffset.UtcNow;
+        //         var logsEnumeration = DockerHostManager.GetContainerLogsAsync(EnvironmentId.Value, Container.ContainerId, _previousOffset, now);
+        //         var counter = 0;
+        //         await foreach (var log in logsEnumeration)
+        //         {
+        //             _logsLoaded = true;
+        //             _logs.Add(log);
+        //             counter++;
+
+        //             if (counter % 100 == 0)
+        //             {
+        //                 await InvokeAsync(StateHasChanged);
+        //             }
+        //         }
+        //         _previousOffset = now;
+
+        //         await InvokeAsync(StateHasChanged);
+        //     }
+
+        //     using var timer = new PeriodicTimer(TimeSpan.FromSeconds(10));
+        //     while (!_timerCancellationToken.IsCancellationRequested && await timer.WaitForNextTickAsync())
+        //     {
+        //         if (EnvironmentId.HasValue && Container != null)
+        //         {
+        //             var now = DateTimeOffset.UtcNow;
+        //             var logsEnumeration = DockerHostManager.GetContainerLogsAsync(EnvironmentId.Value, Container.ContainerId, _previousOffset, now);
+        //             var counter = 0;
+        //             await foreach (var log in logsEnumeration)
+        //             {
+        //                 _logsLoaded = true;
+        //                 _logs.Add(log);
+        //                 counter++;
+
+        //                 if (counter % 100 == 0)
+        //                 {
+        //                     await InvokeAsync(StateHasChanged);
+        //                 }
+        //             }
+        //             _previousOffset = now;
+
+        //             await InvokeAsync(StateHasChanged);
+        //         }
+        //     }
+        // Make sure any subsequent logic is not called after the component is disposed
+        // return;
     }
 
     public void Dispose()
     {
-        _timerCancellationToken.Cancel();
-        _timerCancellationToken.Dispose();
+        // _timerCancellationToken.Cancel();
+        // _timerCancellationToken.Dispose();
         GC.SuppressFinalize(this);
     }
 }

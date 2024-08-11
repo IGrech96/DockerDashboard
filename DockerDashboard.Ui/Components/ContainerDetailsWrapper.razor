@@ -1,0 +1,196 @@
+﻿@using DockerDashboard.Shared.Data
+@using DockerDashboard.Shared.Hubs
+@using DockerDashboard.Shared.Services
+@using DockerDashboard.Ui.Clients
+@using DockerDashboard.Ui.Services
+@using Microsoft.AspNetCore.Components.Sections
+@using ContainerStatus = DockerDashboard.Shared.Data.ContainerStatus
+@inject NavigationManager Navigation
+@inject IDockerHostManager DockerHostManager
+@inject TooltipService TooltipService
+@inject IJSRuntime JSRuntime
+
+
+
+<style>
+    ul[role=tablist] {
+        flex-wrap: wrap;
+    }
+
+    .box {
+        overflow-wrap: break-word;
+    }
+</style>
+@if (Container == null)
+{
+    <SectionContent SectionName="page-details-sidebar">
+        <RadzenStack AlignItems="AlignItems.Center">
+            <RadzenProgressBarCircular ShowValue="true" Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Large">
+                <Template>Loading...</Template>
+            </RadzenProgressBarCircular>
+        </RadzenStack>
+    </SectionContent>
+}
+else
+{
+    <SectionContent SectionName="page-details-toolbar">
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Start">
+                <RadzenSplitButton Disabled="@(!ToolBarEnabled)" Click=@(args => RunStopContainer(args)) Text="@EnsureFullMode(ChooseMenuText("Start", "Stop"))" Icon="@ChooseMenuText("play_arrow", "stop")" MouseEnter="@(args => ShowTooltip(args,ChooseMenuText("Start", "Stop")))">
+                    <ChildContent>
+                        @if (Container?.Status == ContainerStatus.Running)
+                        {
+                            <RadzenSplitButtonItem Text="Pause" Icon="pause" Value="Pause"/>
+                        }
+                    </ChildContent>
+                </RadzenSplitButton>
+                <RadzenButton Disabled="@(!ToolBarEnabled)" Click="@Delete" Text="@EnsureFullMode("Delete")" Icon="delete" MouseEnter="@(args => ShowTooltip(args,"Delete"))"></RadzenButton>
+                <RadzenButton Disabled="@(!ToolBarEnabled)" Click="@Restart" Text="@EnsureFullMode("Restart")" Icon="restart_alt" MouseEnter="@(args => ShowTooltip(args,"Restart"))"></RadzenButton>
+            </RadzenStack>
+            @if (CompactMode)
+            {
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End">
+                    <RadzenButton Icon="open_in_new" MouseEnter="@(args => ShowTooltip(args, "Open in a new tab"))" Click="OnOpenInNewTab"></RadzenButton>
+                    <RadzenButton Icon="close" Click="OnContainerDetailsClose" MouseEnter="@(args => ShowTooltip(args, "Close"))"></RadzenButton>
+                </RadzenStack>
+            }
+        </RadzenStack>
+    </SectionContent>
+
+    @if (CompactMode)
+    {
+        <SectionContent SectionName="page-details-sidebar">
+            <ContainerDetails @ref="_details" EnvironmentId="EnvironmentId" Container="Container"></ContainerDetails>
+        </SectionContent>
+    }
+    else
+    {
+        <ContainerDetails @ref="_details" EnvironmentId="EnvironmentId" Container="Container"></ContainerDetails>
+    }
+}
+
+@code {
+
+    [Parameter]
+    public ContainerModel? Container { get; set; }
+
+    [Parameter]
+    public long? EnvironmentId { get; set; }
+
+    [Parameter]
+    public bool CompactMode { get; set; }
+
+    [Parameter]
+    public Func<Task>? Close { get; set; }
+
+    private ContainerDetails? _details;
+    
+    private bool ToolBarEnabled => Container != null && Container.Status != ContainerStatus.NA;
+
+    public async Task UpdateAsync(ContainerEvent @event)
+    {
+        if (@event is UpdateContainerEvent update)
+        {
+            Container = update.Container;
+            if (_details != null)
+            {
+                await _details.ReloadAsync();
+            }
+        }
+        else if (@event is DestroyContainerEvent)
+        {
+            await OnContainerDetailsClose();
+        }
+    }
+
+    private string ChooseMenuText(string activate, string diactivate)
+    {
+        if (Container?.Status == ContainerStatus.Running)
+        {
+            return diactivate;
+        }
+        return activate;
+    }
+
+    private string? EnsureFullMode(string? activate)
+    {
+        return CompactMode ? null : activate;
+    }
+
+    private void ShowTooltip(ElementReference elementReference, string text, TooltipOptions? options = null) => TooltipService.Open(elementReference, text, options);
+
+    // protected override async Task OnParametersSetAsync()
+    // {
+    //     await base.OnParametersSetAsync();
+    //     if (_details != null)
+    //     {
+
+    //         await _details.ReloadAsync();
+    //     }
+    // }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
+
+    protected async Task OnOpenInNewTab()
+    {
+        await JSRuntime.InvokeVoidAsync("open", Navigation.ToAbsoluteUri($"/container/{EnvironmentId}/{Container?.ContainerId}"), "_blank");
+    }
+
+    
+
+    private async Task OnContainerDetailsClose()
+    {
+        if (Close != null)
+        {
+            await Close();
+        }
+    }
+
+    private async Task RunStopContainer(RadzenSplitButtonItem? args)
+    {
+        if (Container?.Status == ContainerStatus.Running)
+        {
+            if (args is { Value: "Pause" })
+            {
+                Container.Status = ContainerStatus.NA;
+                StateHasChanged();
+                await DockerHostManager.PauseContainerAsync(EnvironmentId!.Value, Container.ContainerId);
+            }
+            else
+            {
+                Container.Status = ContainerStatus.NA;
+                StateHasChanged();
+                await DockerHostManager.StopContainerAsync(EnvironmentId!.Value, Container.ContainerId);
+            }
+        }
+        else if (Container != null)
+        {
+            Container.Status = ContainerStatus.NA;
+            StateHasChanged();
+            await DockerHostManager.StartContainerAsync(EnvironmentId!.Value, Container.ContainerId);
+        }
+    }
+
+    private async Task Delete()
+    {
+        if (Container != null)
+        {
+            Container.Status = ContainerStatus.NA;
+            StateHasChanged();
+            await DockerHostManager.DeleteContainerAsync(EnvironmentId!.Value, Container.ContainerId);
+        }
+    }
+
+    private async Task Restart()
+    {
+        if (Container != null)
+        {
+            Container.Status = ContainerStatus.NA;
+            StateHasChanged();
+            await DockerHostManager.RestartContainerAsync(EnvironmentId!.Value, Container.ContainerId);
+        }
+    }
+}

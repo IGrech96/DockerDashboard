@@ -31,10 +31,9 @@
 
 @if (_containerDetails != null)
 {
-    <SectionContent SectionName="page-details-sidebar">
-        <ContainerDetails @ref="containerDetailsComponent" EnvironmentId="@EnvironmentId" Container="@_containerDetails" CompactMode="true" Close="OnContainerDetailsClose"></ContainerDetails>
-    </SectionContent>
+    <ContainerDetailsWrapper @ref="containerDetailsComponent" EnvironmentId="@EnvironmentId" Container="@_containerDetails" CompactMode="true" Close="OnContainerDetailsClose"></ContainerDetailsWrapper>
 }
+
 @code {
     // EventConsole console;
 
@@ -42,7 +41,7 @@
     public long EnvironmentId { get; set; }
 
     private ContainersGrid grid;
-    private ContainerDetails containerDetailsComponent;
+    private ContainerDetailsWrapper containerDetailsComponent;
     private ContainerModel? _containerDetails;
     private RadzenSidebar _sidebar;
     private HubConnection _hubConnection;

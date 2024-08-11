@@ -3,8 +3,6 @@
 @using DockerDashboard.Shared.Data
 @using DockerDashboard.Shared.Hubs
 @using DockerDashboard.Shared.Services
-@using DockerDashboard.Ui.Clients
-@using DockerDashboard.Ui.Services
 @using Microsoft.AspNetCore.Components.Sections
 @using Microsoft.AspNetCore.SignalR.Client
 
@@ -19,7 +17,7 @@
     </RadzenStack>
 </SectionContent>
 
-<ContainerDetails @ref="_containerDetailsComponent" EnvironmentId="environmentId" Container="@_containerDetails" CompactMode="false"></ContainerDetails>
+<ContainerDetailsWrapper @ref="_containerDetailsComponent" EnvironmentId="environmentId" Container="@_containerDetails" CompactMode="false"></ContainerDetailsWrapper>
 
 @code {
     [Parameter]
@@ -29,7 +27,7 @@
     public string? containerId { get; set; }
 
     private ContainerModel? _containerDetails;
-    private ContainerDetails? _containerDetailsComponent;
+    private ContainerDetailsWrapper? _containerDetailsComponent;
     private HubConnection _hubConnection;
     private bool _isWatchEnabled = false;
 
