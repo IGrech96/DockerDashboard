@@ -1,12 +1,12 @@
 ﻿using DockerDashboard.Shared.Data;
 
-namespace DockerDashboard.Shared.Services.DockerHost;
+namespace DockerDashboard.Ui.Clients;
 
 public interface IDockerHostManager
 {
-    IAsyncEnumerable<ContainerModel> GetContainers(long environment);
+    IAsyncEnumerable<ContainerModel> GetContainers(long environment, CancellationToken cancellationToken);
 
-    Task<ContainerModel> GetContainerAsync(long environment, string containerId);
+    Task<ContainerModel> GetContainerAsync(long environment, string containerId, CancellationToken cancellationToken);
 
     IAsyncEnumerable<string> GetContainerLogsAsync(long environment, string containerId, DateTimeOffset since,
         DateTimeOffset until);

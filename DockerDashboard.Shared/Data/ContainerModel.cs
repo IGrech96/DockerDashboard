@@ -1,8 +1,11 @@
 ﻿
+using System.ComponentModel.DataAnnotations;
+
 namespace DockerDashboard.Shared.Data;
 
 public class ContainerModel
 {
+    [Key]
     public string ContainerId { get; set; }
 
     public string ShortId { get; set; }

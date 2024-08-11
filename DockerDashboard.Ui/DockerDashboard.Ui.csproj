@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <DockerComposeProjectPath>..\docker-compose.dcproj</DockerComposeProjectPath>
+	<DebuggerSupport>True</DebuggerSupport>
   </PropertyGroup>
 
   <ItemGroup>
@@ -9,9 +10,16 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.0.7" PrivateAssets="all" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.RazorPages" Version="2.2.5" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
+    <PackageReference Include="Microsoft.OData.Client" Version="7.21.3" />
+    <PackageReference Include="Microsoft.OData.Core" Version="7.21.3" />
+    <PackageReference Include="Microsoft.OData.Edm" Version="7.21.3" />
+    <PackageReference Include="Microsoft.Spatial" Version="7.21.3" />
     <PackageReference Include="Radzen.Blazor" Version="4.34.0" />
+    <PackageReference Include="Simple.OData.Client" Version="6.0.1" />
+    <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
 	<PackageReference Include="System.Linq.Async" Version="6.0.1" />
 	<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.7" />
+	<PackageReference Include="System.Text.Json" Version="8.0.4" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,8 +1,10 @@
 ﻿@page "/container/{environmentId:long}/{containerId}"
-@using DockerDashboard.Shared.Services.DockerHost
 @using DockerDashboard.Ui.Components
 @using DockerDashboard.Shared.Data
 @using DockerDashboard.Shared.Hubs
+@using DockerDashboard.Shared.Services
+@using DockerDashboard.Ui.Clients
+@using DockerDashboard.Ui.Services
 @using Microsoft.AspNetCore.Components.Sections
 @using Microsoft.AspNetCore.SignalR.Client
 
@@ -58,7 +60,7 @@
     {
         await base.OnParametersSetAsync();
 
-        _containerDetails = await DockerHostManager.GetContainerAsync(environmentId, containerId);
+        _containerDetails = await DockerHostManager.GetContainerAsync(environmentId, containerId, CancellationToken.None);
         StateHasChanged();
     }
 

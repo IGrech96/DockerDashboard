@@ -1,6 +1,5 @@
 ﻿using DockerDashboard.Services.Environment;
 using DockerDashboard.Shared.Data;
-using DockerDashboard.Shared.Services.DockerHost;
 
 namespace DockerDashboard.Services.DockerHost;
 
@@ -13,18 +12,18 @@ public class DockerHostManager : IDockerHostManager
         _dockerEnvironmentManager = dockerEnvironmentManager;
     }
 
-    public Task<ContainerModel> GetContainerAsync(long environment, string containerId)
+    public Task<ContainerModel> GetContainerAsync(long environment, string containerId, CancellationToken cancellationToken)
     {
          var host = _dockerEnvironmentManager.GetHost(environment);
 
-        return host.GetContainer(containerId, CancellationToken.None);
+        return host.GetContainer(containerId, cancellationToken);
     }
 
-    public IAsyncEnumerable<ContainerModel> GetContainers(long environment)
+    public IAsyncEnumerable<ContainerModel> GetContainers(long environment, string? beforeContainerId, long? take, CancellationToken cancellationToken)
     {
         var host = _dockerEnvironmentManager.GetHost(environment);
 
-        return host.GetContainers(CancellationToken.None);
+        return host.GetContainers(beforeContainerId, take, cancellationToken);
     }
 
     public IAsyncEnumerable<string> GetContainerLogsAsync(long environment, string containerId, DateTimeOffset since,

@@ -30,7 +30,7 @@ public class DockerHost
     {
         watchContainerEventsTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-        MonitorEventsAsync(watchContainerEventsTokenSource.Token);
+        //MonitorEventsAsync(watchContainerEventsTokenSource.Token);
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
     }
 
@@ -78,9 +78,26 @@ public class DockerHost
         }
     }
 
-    public async IAsyncEnumerable<ContainerModel> GetContainers(CancellationToken cancellationToken)
+    public async IAsyncEnumerable<ContainerModel> GetContainers(string? beforeContainerId, long? take, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var data = await client_.Containers.ListContainersAsync(new (){All=true}, cancellationToken);
+        var parameters = new ContainersListParameters()
+        {
+            Limit = take,
+        };
+        if (beforeContainerId != null)
+        {
+            parameters.Filters = new Dictionary<string, IDictionary<string, bool>>()
+            {
+                {
+                    "before",
+                    new Dictionary<string, bool>() { { beforeContainerId, true } }
+                }
+            };
+        }
+
+        var data = await client_
+            .Containers
+            .ListContainersAsync(parameters, cancellationToken);
 
         foreach (var container in data) 
         {

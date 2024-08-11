@@ -1,18 +1,34 @@
 ﻿using DockerDashboard.Shared.Data;
-using DockerDashboard.Shared.Services.DockerHost;
+using Simple.OData.Client;
+using System.Runtime.CompilerServices;
+using DockerDashboard.Ui.Clients;
 
 namespace DockerDashboard.Ui.Services
 {
     public class DockerHostManager : IDockerHostManager
     {
+        private const string ContainersCollection = "Containers";
+        private readonly ODataClient _client;
+
+        public DockerHostManager([FromKeyedServices(ClientCategory.Backend)]ODataClient client)
+        {
+            _client = client;
+        }
+
         public Task DeleteContainerAsync(long environment, string containerId)
         {
             throw new NotImplementedException();
         }
 
-        public Task<ContainerModel> GetContainerAsync(long environment, string containerId)
+        public async Task<ContainerModel> GetContainerAsync(long environment, string containerId, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            var data = await _client
+                .For<ContainerModel>(ContainersCollection)
+                .QueryOptions($"environment={environment}")
+                .Filter(m => m.ContainerId == containerId)
+                .FindEntryAsync(cancellationToken);
+
+            return data;
         }
 
         public Task<ContainerDetailedModel> GetContainerDetails(long environment, string containerId)
@@ -25,9 +41,17 @@ namespace DockerDashboard.Ui.Services
             throw new NotImplementedException();
         }
 
-        public IAsyncEnumerable<ContainerModel> GetContainers(long environment)
+        public async IAsyncEnumerable<ContainerModel> GetContainers(long environment, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            var data = _client
+                .For<ContainerModel>(ContainersCollection)
+                .QueryOptions($"environment={environment}")
+                .FindEntriesAllPagesAsync(cancellationToken);
+
+            await foreach (var dockerEnvironment in data)
+            {
+                yield return dockerEnvironment;
+            }
         }
 
         public Task PauseContainerAsync(long environment, string containerId)

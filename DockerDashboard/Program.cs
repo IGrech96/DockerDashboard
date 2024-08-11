@@ -1,10 +1,12 @@
 using DockerDashboard.Hubs;
-using DockerDashboard.Services;
 using DockerDashboard.Services.DockerHost;
 using DockerDashboard.Services.Environment;
-using DockerDashboard.Shared.Services.DockerHost;
+using DockerDashboard.Shared.Data;
 using DockerDashboard.Shared.Services.Environment;
-using Radzen;
+using Microsoft.AspNetCore.OData;
+using Microsoft.OData.Edm;
+using Microsoft.OData.ModelBuilder;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +21,22 @@ builder.Services.AddScoped<IPageDetailsNotificationService, SimplePageDetailsNot
 builder.Services.AddSingleton<DockerEnvironmentManager>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<DockerEnvironmentManager>());
 builder.Services.AddSingleton<IDockerEnvironmentManager>(sp => sp.GetRequiredService<DockerEnvironmentManager>());
+
+builder.Services.AddSwaggerGen(c =>
+    {
+        c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });                
+    });
+
+static IEdmModel GetEdmModel()
+{
+    ODataConventionModelBuilder builder = new();
+    builder.EntitySet<ContainerModel>("Containers");
+    builder.EntitySet<DockerEnvironment>("DockerEnvironments");
+    return builder.GetEdmModel();
+}
+
+
+builder.Services.AddControllers().AddOData(opt => opt.AddRouteComponents("odata", GetEdmModel()).SkipToken());
 
 var app = builder.Build();
 
@@ -49,4 +67,11 @@ app.MapFallbackToFile("index.html");
 
 app.MapHub<ContainerDetailsHub>("/containerDetailsHub");
 
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "API V1");
+    });
+
+app.UseEndpoints(endpoints => endpoints.MapControllers());
 app.Run();

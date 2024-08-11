@@ -1,12 +1,27 @@
-﻿using DockerDashboard.Shared.Services.Environment;
+﻿using System.Runtime.CompilerServices;
+using DockerDashboard.Shared.Services.Environment;
+using DockerDashboard.Ui.Clients;
+using Simple.OData.Client;
 
 namespace DockerDashboard.Ui.Services
 {
     public class DockerEnvironmentManager : IDockerEnvironmentManager
     {
-        public async IAsyncEnumerable<DockerEnvironment> GetAllEnvironmentsAsync(CancellationToken cancellationToken)
+        private readonly ODataClient _client;
+
+        public DockerEnvironmentManager([FromKeyedServices(ClientCategory.Backend)]ODataClient client)
         {
-             yield return new DockerEnvironment() { Id = 1, Name ="Local" };
+            _client = client;
+        }
+
+        public async IAsyncEnumerable<DockerEnvironment> GetAllEnvironmentsAsync([EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            var data = await _client.For<DockerEnvironment>().FindEntriesAsync(cancellationToken);
+
+            foreach (var dockerEnvironment in data)
+            {
+                yield return dockerEnvironment;
+            }
         }
     }
 }
