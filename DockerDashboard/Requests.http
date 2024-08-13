@@ -1,0 +1,58 @@
+# For more info on HTTP files go to https://aka.ms/vs/httpfile
+
+@baseUrl=https://localhost:7105
+@containerId=6b0e7df8777a50458bc899929b5322e94ec4b54299d61e42a36bd06ab7333412
+@environmentId=1
+
+# metadata
+
+GET {{baseUrl}}/odata
+
+###
+
+GET {{baseUrl}}/odata/$metadata
+
+###
+
+
+# Get Container Details
+GET {{baseUrl}}/odata/Containers('{{containerId}}')/Default.Details(environment={{environmentId}})
+
+###
+
+# Stop container
+POST {{baseUrl}}/odata/Containers('{{containerId}}')/Default.Stop HTTP/1.1
+Content-Type: application/json
+
+{"environment": {{environmentId}}}
+
+###
+
+# Start container
+POST {{baseUrl}}/odata/Containers('{{containerId}}')/Default.Start HTTP/1.1
+Content-Type: application/json
+
+{"environment": {{environmentId}}}
+
+###
+
+# Pause container
+POST {{baseUrl}}/odata/Containers('{{containerId}}')/Default.Pause HTTP/1.1
+Content-Type: application/json
+
+{"environment": {{environmentId}}}
+
+###
+
+# Restart container
+POST {{baseUrl}}/odata/Containers('{{containerId}}')/Default.Restart HTTP/1.1
+Content-Type: application/json
+
+{"environment": {{environmentId}}}
+
+###
+
+# Delete container
+DELETE {{baseUrl}}/odata/Containers('{{containerId}}')?environment={{environmentId}} HTTP/1.1
+
+###

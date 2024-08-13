@@ -172,13 +172,13 @@
         {
             data.Status = ContainerStatus.NA;
             StateHasChanged();
-            await DockerHostManager.StopContainerAsync(EnvironmentId!.Value, data.ContainerId);
+            await DockerHostManager.StopContainerAsync(EnvironmentId!.Value, data.ContainerId, CancellationToken.None);
         }
         else
         {
             data.Status = ContainerStatus.NA;
             StateHasChanged();
-            await DockerHostManager.StartContainerAsync(EnvironmentId!.Value, data.ContainerId);
+            await DockerHostManager.StartContainerAsync(EnvironmentId!.Value, data.ContainerId, CancellationToken.None);
         }
     }
 
@@ -186,7 +186,7 @@
     {
         data.Status = ContainerStatus.NA;
         StateHasChanged();
-        await DockerHostManager.DeleteContainerAsync(EnvironmentId!.Value, data.ContainerId);
+        await DockerHostManager.DeleteContainerAsync(EnvironmentId!.Value, data.ContainerId, CancellationToken.None);
     }
 
     private bool ToolbarEnabled(ContainerModel data)

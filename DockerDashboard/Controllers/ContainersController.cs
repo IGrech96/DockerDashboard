@@ -1,8 +1,8 @@
-﻿using DockerDashboard.Services.DockerHost;
-using DockerDashboard.Shared.Data;
+﻿using DockerDashboard.Shared.Data;
 using DockerDashboard.Shared.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Extensions;
+using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Results;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
@@ -18,7 +18,6 @@ public class ContainersController : ODataController
         _hostManager = hostManager;
     }
 
-    [HttpGet()]
     public async Task<PageResult<ContainerModel>> Get(ODataQueryOptions<ContainerModel> options, long environment, CancellationToken cancellationToken)
     {
         var top = options.Top?.Value ?? 3;
@@ -32,9 +31,56 @@ public class ContainersController : ODataController
             null);
     }
 
-    [HttpGet("odata/Containers/({containerId})")]
-    public async Task<ContainerModel> GetById([FromQuery] long environment, [FromRoute] string containerId, CancellationToken cancellationToken)
+    public async Task<ContainerModel> Get(long environment, [FromRoute] string key,  CancellationToken cancellationToken)
     {
-        return await _hostManager.GetContainerAsync(environment, containerId, cancellationToken);
+        var data = await _hostManager.GetContainerAsync(environment, key, cancellationToken);
+        return data;
     }
+
+    [HttpGet]
+    public async Task<ContainerDetailedModel> Details(long environment, [FromODataUri] string key, CancellationToken cancellationToken)
+    {
+        var data = await _hostManager.GetContainerDetails(environment, key, cancellationToken);
+        return data;
+    }
+
+    [HttpPost]
+    public async Task<ActionResult> Stop([FromRoute] string key, ODataActionParameters? parameters, CancellationToken cancellationToken)
+    {
+        var environment = (long)parameters["environment"];
+        await _hostManager.StopContainerAsync(environment, key, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost]
+    public async Task<ActionResult> Start([FromRoute] string key, ODataActionParameters? parameters, CancellationToken cancellationToken)
+    {
+        var environment = (long)parameters["environment"];
+        await _hostManager.StartContainerAsync(environment, key, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpDelete]
+    public async Task<ActionResult> Delete(long environment, [FromRoute] string key, CancellationToken cancellationToken)
+    {
+        await _hostManager.DeleteContainerAsync(environment, key, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost]
+    public async Task<ActionResult> Restart([FromRoute] string key, ODataActionParameters? parameters, CancellationToken cancellationToken)
+    {
+        var environment = (long)parameters["environment"];
+        await _hostManager.RestartContainerAsync(environment, key, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost]
+    public async Task<ActionResult> Pause([FromRoute] string key, ODataActionParameters? parameters, CancellationToken cancellationToken)
+    {
+        var environment = (long)parameters["environment"];
+        await _hostManager.PauseContainerAsync(environment, key, cancellationToken);
+        return NoContent();
+    }
+
 }

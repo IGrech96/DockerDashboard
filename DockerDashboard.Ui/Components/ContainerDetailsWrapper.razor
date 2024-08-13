@@ -157,20 +157,20 @@ else
             {
                 Container.Status = ContainerStatus.NA;
                 StateHasChanged();
-                await DockerHostManager.PauseContainerAsync(EnvironmentId!.Value, Container.ContainerId);
+                await DockerHostManager.PauseContainerAsync(EnvironmentId!.Value, Container.ContainerId, CancellationToken.None);
             }
             else
             {
                 Container.Status = ContainerStatus.NA;
                 StateHasChanged();
-                await DockerHostManager.StopContainerAsync(EnvironmentId!.Value, Container.ContainerId);
+                await DockerHostManager.StopContainerAsync(EnvironmentId!.Value, Container.ContainerId, CancellationToken.None);
             }
         }
         else if (Container != null)
         {
             Container.Status = ContainerStatus.NA;
             StateHasChanged();
-            await DockerHostManager.StartContainerAsync(EnvironmentId!.Value, Container.ContainerId);
+            await DockerHostManager.StartContainerAsync(EnvironmentId!.Value, Container.ContainerId, CancellationToken.None);
         }
     }
 
@@ -180,7 +180,7 @@ else
         {
             Container.Status = ContainerStatus.NA;
             StateHasChanged();
-            await DockerHostManager.DeleteContainerAsync(EnvironmentId!.Value, Container.ContainerId);
+            await DockerHostManager.DeleteContainerAsync(EnvironmentId!.Value, Container.ContainerId, CancellationToken.None);
         }
     }
 
@@ -190,7 +190,7 @@ else
         {
             Container.Status = ContainerStatus.NA;
             StateHasChanged();
-            await DockerHostManager.RestartContainerAsync(EnvironmentId!.Value, Container.ContainerId);
+            await DockerHostManager.RestartContainerAsync(EnvironmentId!.Value, Container.ContainerId, CancellationToken.None);
         }
     }
 }

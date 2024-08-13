@@ -195,12 +195,12 @@ public class DockerHost
             Status = MapStatus(response.State.Status),
             Created = response.Created,
             ImageName = response.Image,
-            EntryPoint = response.Config.Entrypoint.ToArray(),
+            EntryPoint = response.Config.Entrypoint?.ToArray() ?? [],
             WorkingDirectory = response.Config.WorkingDir,
             Command = response.Config.Cmd.ToArray(),
             User = response.Config.User,
-            Environment = ConvertEnvironment(),
-            Labels = new (response.Config.Labels),
+            Environment = ConvertEnvironment().Select(v => new KeyValue(v.Key, v.Value)).ToArray(),
+            Labels = response.Config.Labels.Select(v => new KeyValue(v.Key, v.Value)).ToArray(),
             RestartCount = response.RestartCount,
             RestartPolicy = MapRestartPolicy(response.HostConfig.RestartPolicy.Name),
             Mounts = response.Mounts.Select(MapMountPoint).ToArray(),
@@ -258,7 +258,7 @@ public class DockerHost
             Status = MapStatus(response.State),
             Created = response.Created,
             ImageName = response.Image,
-            Ports = response.Ports.Select(p => (p.PublicPort, p.PublicPort)).ToArray(), //todo
+            Ports = response.Ports.Select(p => new ContainerPort(p.PublicPort, p.PrivatePort)).ToArray(), //todo
         };
     }
 

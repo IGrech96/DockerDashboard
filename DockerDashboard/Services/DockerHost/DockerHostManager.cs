@@ -1,5 +1,6 @@
 ﻿using DockerDashboard.Services.Environment;
 using DockerDashboard.Shared.Data;
+using DockerDashboard.Shared.Services;
 
 namespace DockerDashboard.Services.DockerHost;
 
@@ -34,45 +35,45 @@ public class DockerHostManager : IDockerHostManager
         return host.GetLogsAsync(containerId, since, until, CancellationToken.None);
     }
 
-    public Task<ContainerDetailedModel> GetContainerDetails(long environment, string containerId)
+    public Task<ContainerDetailedModel> GetContainerDetails(long environment, string containerId, CancellationToken cancellationToken)
     {
         var host = _dockerEnvironmentManager.GetHost(environment);
 
-        return host.GetContainerDetails(containerId, CancellationToken.None);
+        return host.GetContainerDetails(containerId, cancellationToken);
     }
 
-    public Task PauseContainerAsync(long environment, string containerId)
+    public Task PauseContainerAsync(long environment, string containerId, CancellationToken cancellationToken)
     {
         var host = _dockerEnvironmentManager.GetHost(environment);
 
-        return host.PauseContainerAsync(containerId, CancellationToken.None);
+        return host.PauseContainerAsync(containerId, cancellationToken);
     }
 
-    public Task StopContainerAsync(long environment, string containerId)
+    public Task StopContainerAsync(long environment, string containerId, CancellationToken cancellationToken)
     {
         var host = _dockerEnvironmentManager.GetHost(environment);
 
-        return host.StopContainerAsync(containerId, CancellationToken.None);
+        return host.StopContainerAsync(containerId, cancellationToken);
     }
 
-    public Task StartContainerAsync(long environment, string containerId)
+    public Task StartContainerAsync(long environment, string containerId, CancellationToken cancellationToken)
     {
         var host = _dockerEnvironmentManager.GetHost(environment);
 
-        return host.StartContainerAsync(containerId, CancellationToken.None);
+        return host.StartContainerAsync(containerId, cancellationToken);
     }
 
-    public Task DeleteContainerAsync(long environment, string containerId)
+    public Task DeleteContainerAsync(long environment, string containerId, CancellationToken cancellationToken)
     {
         var host = _dockerEnvironmentManager.GetHost(environment);
 
-        return host.DeleteContainerAsync(containerId, CancellationToken.None);
+        return host.DeleteContainerAsync(containerId, cancellationToken);
     }
 
-    public Task RestartContainerAsync(long environment, string containerId)
+    public Task RestartContainerAsync(long environment, string containerId, CancellationToken cancellationToken)
     {
         var host = _dockerEnvironmentManager.GetHost(environment);
 
-        return host.RestartContainerAsync(containerId, CancellationToken.None);
+        return host.RestartContainerAsync(containerId, cancellationToken);
     }
 }

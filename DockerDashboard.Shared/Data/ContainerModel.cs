@@ -18,7 +18,7 @@ public class ContainerModel
 
     public DateTime Created { get; set; }
 
-    public (ushort localPort, ushort containerPort)[] Ports { get; set; }
+    public ContainerPort[] Ports { get; set; } = [];
 
     public void Populate(ContainerModel other)
     {
@@ -29,6 +29,28 @@ public class ContainerModel
         Status = other.Status;
         Created = other.Created;
         Ports = other.Ports;
+    }
+}
+
+public record ContainerPort
+{
+    public ContainerPort()
+    {
+
+    }
+    public ContainerPort(ushort LocalPort, ushort Port)
+    {
+        this.LocalPort = LocalPort;
+        this.Port = Port;
+    }
+
+    public ushort LocalPort { get; init; }
+    public ushort Port { get; init; }
+
+    public void Deconstruct(out ushort Key, out ushort Value)
+    {
+        Key = this.LocalPort;
+        Value = this.Port;
     }
 }
 

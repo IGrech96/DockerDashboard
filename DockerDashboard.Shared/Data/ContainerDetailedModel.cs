@@ -12,15 +12,37 @@ public class ContainerDetailedModel : ContainerModel
 
     public string User { get; set; }
 
-    public Dictionary<string, string> Environment { get; set; }
+    public KeyValue[] Environment { get; set; }
 
-    public Dictionary<string, string> Labels { get; set; }
+    public KeyValue[] Labels { get; set; }
 
     public long RestartCount { get; set; }
 
     public RestartPolicy RestartPolicy { get; set; }
 
     public MountPoint[] Mounts { get; set; }
+}
+
+public record KeyValue
+{
+    public KeyValue()
+    {
+
+    }
+    public KeyValue(string Key, string Value)
+    {
+        this.Key = Key;
+        this.Value = Value;
+    }
+
+    public string Key { get; init; }
+    public string Value { get; init; }
+
+    public void Deconstruct(out string Key, out string Value)
+    {
+        Key = this.Key;
+        Value = this.Value;
+    }
 }
 
 public enum RestartPolicy

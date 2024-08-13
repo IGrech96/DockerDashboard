@@ -23,12 +23,21 @@ builder.Services.AddKeyedScoped<ODataClient>(ClientCategory.Backend, (provider, 
 {
     var httpClientFactory = provider.GetRequiredService<IHttpClientFactory>();
     var httpClient = httpClientFactory.CreateClient(ClientCategory.Backend);
-    var oDataClientSettings = new ODataClientSettings(httpClient, new Uri("odata", UriKind.Relative));
+    var oDataClientSettings = new ODataClientSettings(httpClient, new Uri("odata", UriKind.Relative))
+    {
+        OnTrace = OnTrace
+    };
+
+    void OnTrace(string arg1, object[] arg2)
+    {
+    }
+
     var client = new ODataClient(oDataClientSettings);
+    
     return client;
 });
 
 // Supply HttpClient instances that include access tokens when making requests to the server project
-builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("DockerDashboard.Ui.ServerAPI"));
+builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient(ClientCategory.Backend));
 
 await builder.Build().RunAsync();

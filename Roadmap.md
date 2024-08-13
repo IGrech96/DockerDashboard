@@ -1,8 +1,17 @@
 # Features
 
 * [ ] Client-Server approach
+* [ ] Warnings as Errors
 * [ ] Error handling with user notifcation
+* [ ] Server side userfriendly exceptions
 * [ ] Complete burger menu functionality
+	* [ ] Cotainers
+		* [ ] Specific container
+			* [ ] Logs 
+			* [ ] Inspect
+			* [ ] Stats
+			* [ ] Files
+		* [ ] Create new
 	* [ ] Images
 	* [ ] Volumes
 	* [ ] Logs

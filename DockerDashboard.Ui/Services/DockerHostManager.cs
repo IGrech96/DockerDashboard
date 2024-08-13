@@ -1,6 +1,7 @@
 ﻿using DockerDashboard.Shared.Data;
 using Simple.OData.Client;
 using System.Runtime.CompilerServices;
+using DockerDashboard.Shared.Services;
 using DockerDashboard.Ui.Clients;
 
 namespace DockerDashboard.Ui.Services
@@ -8,6 +9,8 @@ namespace DockerDashboard.Ui.Services
     public class DockerHostManager : IDockerHostManager
     {
         private const string ContainersCollection = "Containers";
+        private const string DetailsAction = "Details";
+
         private readonly ODataClient _client;
 
         public DockerHostManager([FromKeyedServices(ClientCategory.Backend)]ODataClient client)
@@ -15,38 +18,49 @@ namespace DockerDashboard.Ui.Services
             _client = client;
         }
 
-        public Task DeleteContainerAsync(long environment, string containerId)
-        {
-            throw new NotImplementedException();
-        }
-
         public async Task<ContainerModel> GetContainerAsync(long environment, string containerId, CancellationToken cancellationToken)
         {
             var data = await _client
                 .For<ContainerModel>(ContainersCollection)
                 .QueryOptions($"environment={environment}")
-                .Filter(m => m.ContainerId == containerId)
+                .Key(new ContainerModel() { ContainerId = containerId })
                 .FindEntryAsync(cancellationToken);
+
+                return data;
+        }
+
+        public async Task<ContainerDetailedModel> GetContainerDetails(long environment, string containerId, CancellationToken cancellationToken)
+        {
+            var data = await _client
+                .For<ContainerModel>(ContainersCollection)
+                //.QueryOptions($"environment={environment}")
+                .Key(new ContainerModel() { ContainerId = containerId })
+                .Function<ContainerDetailedModel>(DetailsAction)
+                .Set(new {environment})
+                .ExecuteAsSingleAsync(cancellationToken);
 
             return data;
         }
 
-        public Task<ContainerDetailedModel> GetContainerDetails(long environment, string containerId)
-        {
-            throw new NotImplementedException();
-        }
-
         public IAsyncEnumerable<string> GetContainerLogsAsync(long environment, string containerId, DateTimeOffset since, DateTimeOffset until)
         {
-            throw new NotImplementedException();
+            //TODO: deside how to use paging here
+            return AsyncEnumerable.Empty<string>();
         }
 
-        public async IAsyncEnumerable<ContainerModel> GetContainers(long environment, [EnumeratorCancellation] CancellationToken cancellationToken)
+        public async IAsyncEnumerable<ContainerModel> GetContainers(long environment, string? beforeContainerId, long? take, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            var data = _client
+            //TODO: handle take if passed
+            var client = _client
                 .For<ContainerModel>(ContainersCollection)
-                .QueryOptions($"environment={environment}")
-                .FindEntriesAllPagesAsync(cancellationToken);
+                .QueryOptions($"environment={environment}");
+
+            if (beforeContainerId != null)
+            {
+                client = client.QueryOptions($"$beforeContainerId={beforeContainerId}");
+            }
+
+            var data = client.FindEntriesAllPagesAsync(cancellationToken);
 
             await foreach (var dockerEnvironment in data)
             {
@@ -54,24 +68,58 @@ namespace DockerDashboard.Ui.Services
             }
         }
 
-        public Task PauseContainerAsync(long environment, string containerId)
+        public async Task DeleteContainerAsync(long environment, string containerId, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            await _client
+                .For<ContainerModel>(ContainersCollection)
+                .QueryOptions($"environment={environment}")
+                .Key(new ContainerModel(){ContainerId = containerId})
+                .DeleteEntryAsync(cancellationToken);
         }
 
-        public Task RestartContainerAsync(long environment, string containerId)
+        public async Task PauseContainerAsync(long environment, string containerId, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            await _client
+                .For<ContainerModel>(ContainersCollection)
+                //.QueryOptions($"environment={environment}")
+                .Key(new ContainerModel() { ContainerId = containerId })
+                .Action("Pause")
+                .Set(new {environment})
+                .ExecuteAsync(cancellationToken);
+
         }
 
-        public Task StartContainerAsync(long environment, string containerId)
+        public async Task RestartContainerAsync(long environment, string containerId, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            await _client
+                .For<ContainerModel>(ContainersCollection)
+                //.QueryOptions($"environment={environment}")
+                .Key(new ContainerModel() { ContainerId = containerId })
+                .Action("Restart")
+                .Set(new {environment})
+                .ExecuteAsync(cancellationToken);
         }
 
-        public Task StopContainerAsync(long environment, string containerId)
+        public async Task StartContainerAsync(long environment, string containerId, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            await _client
+                .For<ContainerModel>(ContainersCollection)
+                //.QueryOptions($"environment={environment}")
+                .Key(new ContainerModel() { ContainerId = containerId })
+                .Action("Start")
+                .Set(new {environment})
+                .ExecuteAsync(cancellationToken);
+        }
+
+        public async Task StopContainerAsync(long environment, string containerId, CancellationToken cancellationToken)
+        {
+            await _client
+                .For<ContainerModel>(ContainersCollection)
+                //.QueryOptions($"environment={environment}")
+                .Key(new ContainerModel() { ContainerId = containerId })
+                .Action("Stop")
+                .Set(new {environment})
+                .ExecuteAsync(cancellationToken);
         }
     }
 }
