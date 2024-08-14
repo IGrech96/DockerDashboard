@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using DockerDashboard.Shared.Data;
 using DockerDashboard.Shared.Services.Environment;
 using DockerDashboard.Ui.Clients;
 using Simple.OData.Client;

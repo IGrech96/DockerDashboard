@@ -2,12 +2,9 @@
 @using DockerDashboard.Ui.Components
 @using DockerDashboard.Shared.Hubs
 @using DockerDashboard.Shared.Data
-@using DockerDashboard.Shared.Services
-@using DockerDashboard.Ui.Clients
-@using DockerDashboard.Ui.Services
 @using Microsoft.AspNetCore.SignalR.Client
 @using IPageDetailsNotificationService = IPageDetailsNotificationService
-@inject IDockerHostManager DockerHostManager
+@using Microsoft.AspNetCore.Components.Sections
 @inject IPageDetailsNotificationService PageDetailsNotificationService;
 @inject NavigationManager Navigation;
 
@@ -25,13 +22,13 @@
 
 <RadzenLayout Style="grid-template-columns: 1fr auto; grid-template-areas: 'rz-header rz-sidebar' 'rz-body rz-sidebar'">
     <RadzenBody>
-        <ContainersGrid @ref="grid" EnvironmentId="EnvironmentId" ContainerOpen="OnContainerOpen"></ContainersGrid>
+        <ContainersGrid @ref="_grid" EnvironmentId="EnvironmentId" ContainerOpen="OnContainerOpen"></ContainersGrid>
     </RadzenBody>    
 </RadzenLayout>
 
 @if (_containerDetails != null)
 {
-    <ContainerDetailsWrapper @ref="containerDetailsComponent" EnvironmentId="@EnvironmentId" Container="@_containerDetails" CompactMode="true" Close="OnContainerDetailsClose"></ContainerDetailsWrapper>
+    <ContainerDetailsWrapper @ref="_containerDetailsComponent" EnvironmentId="@EnvironmentId" Container="@_containerDetails" CompactMode="true" Close="OnContainerDetailsClose"></ContainerDetailsWrapper>
 }
 
 @code {
@@ -40,11 +37,10 @@
     [Parameter]
     public long EnvironmentId { get; set; }
 
-    private ContainersGrid grid;
-    private ContainerDetailsWrapper containerDetailsComponent;
+    private ContainersGrid? _grid;
+    private ContainerDetailsWrapper? _containerDetailsComponent;
     private ContainerModel? _containerDetails;
-    private RadzenSidebar _sidebar;
-    private HubConnection _hubConnection;
+    private HubConnection? _hubConnection;
 
     protected override async Task OnInitializedAsync()
     {
@@ -63,11 +59,6 @@
         await _hubConnection.StartAsync();
     }
 
-    public async void Refresh()
-    {
-        // await LoadData();
-    }
-
     private async Task OnContainerOpen(ContainerModel arg)
     {
         _containerDetails = arg;
@@ -77,10 +68,17 @@
 
     private async Task OnContainerUpdate(ContainerEvent arg)
     {
-        await grid.UpdateContainerAsync(arg);
+        if (_grid != null)
+        {
+            await _grid.UpdateContainerAsync(arg);
+        }
+
         if (_containerDetails?.ContainerId == arg.ContainerId)
         {
-            await containerDetailsComponent.UpdateAsync(arg);
+            if (_containerDetailsComponent != null)
+            {
+                await _containerDetailsComponent.UpdateAsync(arg);
+            }
         }
     }
 

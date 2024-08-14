@@ -8,35 +8,36 @@ using DockerDashboard.Services.Environment;
 using System.Runtime.CompilerServices;
 using DockerDashboard.Shared.Data;
 using DockerDashboard.Shared.Hubs;
-using DockerDashboard.Shared.Services.Environment;
 
 namespace DockerDashboard.Services.DockerHost;
 
 public class DockerHost
 {
-    private readonly IDockerClient client_;
-    private readonly IHubContext<ContainerDetailsHub> containerDetailsHub_;
-    private readonly DockerEnvironment environment_;
-    private CancellationTokenSource watchContainerEventsTokenSource;
+    private readonly IDockerClient _client;
+    private readonly IHubContext<ContainerDetailsHub> _containerDetailsHub;
+    private readonly DockerEnvironment _environment;
+    private CancellationTokenSource? _watchContainerEventsTokenSource;
 
     public DockerHost(IHubContext<ContainerDetailsHub> containerDetailsHub, DockerEnvironment environment)
     {
-        client_ = new DockerClientConfiguration().CreateClient();
-        containerDetailsHub_ = containerDetailsHub;
-        environment_ = environment;
+        _client = new DockerClientConfiguration().CreateClient();
+        _containerDetailsHub = containerDetailsHub;
+        _environment = environment;
     }
 
-    internal async Task StartWatchingAsync(CancellationToken cancellationToken)
+    internal Task StartWatchingAsync(CancellationToken cancellationToken)
     {
-        watchContainerEventsTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        _watchContainerEventsTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-        MonitorEventsAsync(watchContainerEventsTokenSource.Token);
+        MonitorEventsAsync(_watchContainerEventsTokenSource.Token);
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+
+        return Task.CompletedTask;
     }
 
     internal async IAsyncEnumerable<string> GetLogsAsync(string containerId, DateTimeOffset since, DateTimeOffset until, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        using var multiStream = await client_.Containers.GetContainerLogsAsync(containerId, false, new ContainerLogsParameters
+        using var multiStream = await _client.Containers.GetContainerLogsAsync(containerId, false, new ContainerLogsParameters
         {
             ShowStderr = true,
             ShowStdout = true,
@@ -46,7 +47,6 @@ public class DockerHost
         },
         cancellationToken);
 
-        //var results = new List<string>();
         var underlyingStream = multiStream.GetStream();
         using var reader = new StreamReader(underlyingStream, Encoding.UTF8, false);
         while (!cancellationToken.IsCancellationRequested)
@@ -54,10 +54,7 @@ public class DockerHost
             var line = await reader.ReadLineAsync(cancellationToken);
             if (line is null) break;
             yield return line;
-            //results.Add(line);
         }
-
-        //return results.ToArray();
     }
 
    
@@ -65,7 +62,7 @@ public class DockerHost
     private async Task MonitorEventsAsync(CancellationToken cancellationToken)
     {
 #pragma warning disable CS0618 // Type or member is obsolete
-        using var stream = await client_.System.MonitorEventsAsync(new ContainerEventsParameters(), cancellationToken);
+        await using var stream = await _client.System.MonitorEventsAsync(new ContainerEventsParameters(), cancellationToken);
 #pragma warning restore CS0618 // Type or member is obsolete
         using var reader = new StreamReader(stream, Encoding.UTF8, false);
         while (!cancellationToken.IsCancellationRequested)
@@ -95,7 +92,7 @@ public class DockerHost
             };
         }
 
-        var data = await client_
+        var data = await _client
             .Containers
             .ListContainersAsync(parameters, cancellationToken);
 
@@ -108,7 +105,7 @@ public class DockerHost
     
     public async Task<ContainerModel> GetContainer(string containerId, CancellationToken cancellationToken)
     {
-        var data = await client_.Containers.ListContainersAsync(new ContainersListParameters()
+        var data = await _client.Containers.ListContainersAsync(new ContainersListParameters()
         {
             Filters = new Dictionary<string, IDictionary<string, bool>>(){ {"id", new Dictionary<string, bool>() { {containerId, true } } } },
             All=true,
@@ -119,7 +116,7 @@ public class DockerHost
 
     public async Task<ContainerDetailedModel> GetContainerDetails(string containerId, CancellationToken cancellationToken)
     {
-        var data = await client_.Containers.InspectContainerAsync(containerId, cancellationToken);
+        var data = await _client.Containers.InspectContainerAsync(containerId, cancellationToken);
 
         var result = ToContainer(data);
         return result;
@@ -127,34 +124,38 @@ public class DockerHost
 
     public async Task PauseContainerAsync(string containerId, CancellationToken cancellationToken)
     {
-        await client_.Containers.PauseContainerAsync(containerId, cancellationToken);
+        await _client.Containers.PauseContainerAsync(containerId, cancellationToken);
     }
 
     public async Task StopContainerAsync(string containerId, CancellationToken cancellationToken)
     {
-        await client_.Containers.StopContainerAsync(containerId, new(), cancellationToken);
+        await _client.Containers.StopContainerAsync(containerId, new(), cancellationToken);
     }
 
     public async Task StartContainerAsync(string containerId, CancellationToken cancellationToken)
     {
-        await client_.Containers.StartContainerAsync(containerId, new(), cancellationToken);
+        await _client.Containers.StartContainerAsync(containerId, new(), cancellationToken);
     }
 
     public async Task DeleteContainerAsync(string containerId, CancellationToken cancellationToken)
     {
-        await client_.Containers.RemoveContainerAsync(containerId, new(), cancellationToken);
+        await _client.Containers.RemoveContainerAsync(containerId, new(), cancellationToken);
     }
 
     public async Task RestartContainerAsync(string containerId, CancellationToken cancellationToken)
     {
-        await client_.Containers.RestartContainerAsync(containerId, new(), cancellationToken);
+        await _client.Containers.RestartContainerAsync(containerId, new(), cancellationToken);
     }
 
 
     internal async Task StopWatchingAsync(CancellationToken cancellationToken)
     {
-        await watchContainerEventsTokenSource.CancelAsync();
-        client_.Dispose();
+        if (_watchContainerEventsTokenSource != null)
+        {
+            await _watchContainerEventsTokenSource.CancelAsync();
+        }
+
+        _client.Dispose();
     }
     private async Task OnDockerEventAsync(DockerMessage message, CancellationToken cancellationToken)
     {
@@ -168,7 +169,7 @@ public class DockerHost
         
         if (@event is not null) 
         {
-           await containerDetailsHub_.Clients.All.SendAsync(HubRouting.ContainerUpdateMethod(environment_.Id), @event, cancellationToken);
+           await _containerDetailsHub.Clients.All.SendAsync(HubRouting.ContainerUpdateMethod(_environment.Id), @event, cancellationToken);
         }
 
     }
@@ -190,7 +191,6 @@ public class DockerHost
         return new ContainerDetailedModel()
         {
             ContainerId = response.ID,
-            ShortId = response.ID.Substring(0, 12),
             ContainerName = response.Name,
             Status = MapStatus(response.State.Status),
             Created = response.Created,
@@ -253,7 +253,6 @@ public class DockerHost
         return new ContainerModel()
         {
             ContainerId = response.ID,
-            ShortId = response.ID.Substring(0, 12),
             ContainerName = response.Names.First(), // todo,
             Status = MapStatus(response.State),
             Created = response.Created,
@@ -262,43 +261,43 @@ public class DockerHost
         };
     }
 
-    public class DockerMessage // (events.Message)
+    public class DockerMessage
     {
         [JsonPropertyName("status")]
-        public string Status { get; set; }
+        public required string Status { get; set; }
 
         [JsonPropertyName("id")]
-        public string ID { get; set; }
+        public required string ID { get; set; }
 
         [JsonPropertyName("from")]
-        public string From { get; set; }
+        public required string From { get; set; }
 
         [JsonPropertyName("Type")]
-        public string Type { get; set; }
+        public required string Type { get; set; }
 
         [JsonPropertyName("Action")]
-        public string Action { get; set; }
+        public required string Action { get; set; }
 
         [JsonPropertyName("Actor")]
-        public DockerActor Actor { get; set; }
+        public DockerActor? Actor { get; set; }
 
         [JsonPropertyName("scope")]
-        public string Scope { get; set; }
+        public string? Scope { get; set; }
 
         [JsonPropertyName("time")]
-        public long Time { get; set; }
+        public required long Time { get; set; }
 
         [JsonPropertyName("timeNano")]
-        public long TimeNano { get; set; }
+        public required long TimeNano { get; set; }
     }
 
     public class DockerActor // (events.Actor)
     {
         [JsonPropertyName("ID")]
-        public string ID { get; set; }
+        public required string ID { get; set; }
 
         [JsonPropertyName("Attributes")]
-        public IDictionary<string, string> Attributes { get; set; }
+        public IDictionary<string, string> Attributes { get; set; } = new Dictionary<string, string>();
     }
 
 }

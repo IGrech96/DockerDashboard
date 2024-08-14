@@ -164,11 +164,11 @@
                     new("Common", "Command", string.Join(" ", details.Command)),
                     new("Common", "Restart policy", details.RestartPolicy),
                     new("Common", "Restarts count", details.RestartCount),
-                    new("Common", "User", details.User),
-                    new("Common", "Working Directory", details.WorkingDirectory),
+                    new("Common", "User", details.User ?? string.Empty),
+                    new("Common", "Working Directory", details.WorkingDirectory ?? string.Empty),
                     ..details.Environment.Select(r => new DetailedInfo("Environment", r.Key, r.Value)),
                     ..details.Labels.Select(r => new DetailedInfo("Labels", r.Key, r.Value)),
-                    ..details.Mounts.Select(r => new DetailedInfo("Mounts", r.Name, r)),
+                    ..details.Mounts.Where(_ => _.Name != null).Select(r => new DetailedInfo("Mounts", r.Name!, r)),
                 ];
             }
             else

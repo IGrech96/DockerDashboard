@@ -5,13 +5,13 @@
 @inject NavigationManager Navigation
 @inject ContextMenuService ContextMenuService
 
-<RadzenDataGrid @ref=grid Data="@_orderedContainers" Count="@count" AllowVirtualization="true" Style="height:400px"
+<RadzenDataGrid @ref=_grid Data="@_orderedContainers" AllowVirtualization="true" Style="height:400px"
                 AllowFiltering="true" FilterPopupRenderMode="PopupRenderMode.OnDemand" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" LogicalFilterOperator="LogicalFilterOperator.Or"
                 AllowSorting="true">
     <Columns>
         <RadzenDataGridColumn Title="Name">
             <Template Context="data">
-                <Button class="button-link" onclick="@(() => OpenContainer(data))">@data.ContainerName.TrimStart('/')</Button>
+                <button class="button-link" onclick="@(() => OpenContainer(data))">@data.ContainerName.TrimStart('/')</button>
                 <RadzenStack Orientation="Orientation.Horizontal">
                     <RadzenText TextStyle="TextStyle.Caption">@data.ShortId</RadzenText>
                     @* <RadzenIcon Icon="content_copy" style="font-size=1em; width=5px; font-weight=100"></RadzenIcon> *@
@@ -58,9 +58,8 @@
 </RadzenDataGrid>
 
 @code {
-    private RadzenDataGrid<ContainerModel> grid;
-    private int count;
-    private List<ContainerModel> _orderedContainers;
+    private RadzenDataGrid<ContainerModel>? _grid;
+    private List<ContainerModel>? _orderedContainers;
 
     [Parameter]
     public long? EnvironmentId { get; set; }
@@ -101,27 +100,27 @@
                 row.Populate(update.Container);
                 await InvokeAsync(async () =>
                 {
-                    await grid.Reload();
+                    await ReloadGridAsync();
                 });
             }
         }
         else if (@event is CreateContainerEvent create)
         {
-            _orderedContainers.Add(create.Container);
+            _orderedContainers?.Add(create.Container);
             await InvokeAsync(async () =>
             {
-                await grid.Reload();
+                await ReloadGridAsync();
             });
         }
         else if (@event is DestroyContainerEvent destroy)
         {
-            var index = _orderedContainers.FindIndex(m => m.ContainerId == destroy.ContainerId);
+            var index = _orderedContainers?.FindIndex(m => m.ContainerId == destroy.ContainerId);
             if (index >= 0)
             {
-                _orderedContainers.RemoveAt(index);
+                _orderedContainers?.RemoveAt(index.Value);
                 await InvokeAsync(async () =>
                 {
-                    await grid.Reload();
+                    await ReloadGridAsync();
                 });
             }
         }
@@ -132,7 +131,7 @@
         if (EnvironmentId.HasValue)
         {
             _orderedContainers = await DockerHostManager.GetContainers(EnvironmentId.Value, null, null, CancellationToken.None).ToListAsync();
-            await grid.Reload();
+            await ReloadGridAsync();
 
             StateHasChanged();
         }
@@ -192,6 +191,14 @@
     private bool ToolbarEnabled(ContainerModel data)
     {
         return data.Status != ContainerStatus.NA;
+    }
+
+    private async Task ReloadGridAsync()
+    {
+        if (_grid != null)
+        {
+            await _grid.Reload();
+        }
     }
 
 }

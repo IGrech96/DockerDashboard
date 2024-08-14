@@ -23,7 +23,7 @@ namespace DockerDashboard.Ui.Services
             var data = await _client
                 .For<ContainerModel>(ContainersCollection)
                 .QueryOptions($"environment={environment}")
-                .Key(new ContainerModel() { ContainerId = containerId })
+                .Key(containerId)
                 .FindEntryAsync(cancellationToken);
 
                 return data;
@@ -34,7 +34,7 @@ namespace DockerDashboard.Ui.Services
             var data = await _client
                 .For<ContainerModel>(ContainersCollection)
                 //.QueryOptions($"environment={environment}")
-                .Key(new ContainerModel() { ContainerId = containerId })
+                .Key(containerId)
                 .Function<ContainerDetailedModel>(DetailsAction)
                 .Set(new {environment})
                 .ExecuteAsSingleAsync(cancellationToken);
@@ -73,7 +73,7 @@ namespace DockerDashboard.Ui.Services
             await _client
                 .For<ContainerModel>(ContainersCollection)
                 .QueryOptions($"environment={environment}")
-                .Key(new ContainerModel(){ContainerId = containerId})
+                .Key(containerId)
                 .DeleteEntryAsync(cancellationToken);
         }
 
@@ -82,7 +82,7 @@ namespace DockerDashboard.Ui.Services
             await _client
                 .For<ContainerModel>(ContainersCollection)
                 //.QueryOptions($"environment={environment}")
-                .Key(new ContainerModel() { ContainerId = containerId })
+                .Key(containerId)
                 .Action("Pause")
                 .Set(new {environment})
                 .ExecuteAsync(cancellationToken);
@@ -94,7 +94,7 @@ namespace DockerDashboard.Ui.Services
             await _client
                 .For<ContainerModel>(ContainersCollection)
                 //.QueryOptions($"environment={environment}")
-                .Key(new ContainerModel() { ContainerId = containerId })
+                .Key(containerId)
                 .Action("Restart")
                 .Set(new {environment})
                 .ExecuteAsync(cancellationToken);
@@ -105,7 +105,7 @@ namespace DockerDashboard.Ui.Services
             await _client
                 .For<ContainerModel>(ContainersCollection)
                 //.QueryOptions($"environment={environment}")
-                .Key(new ContainerModel() { ContainerId = containerId })
+                .Key(containerId)
                 .Action("Start")
                 .Set(new {environment})
                 .ExecuteAsync(cancellationToken);
@@ -116,7 +116,7 @@ namespace DockerDashboard.Ui.Services
             await _client
                 .For<ContainerModel>(ContainersCollection)
                 //.QueryOptions($"environment={environment}")
-                .Key(new ContainerModel() { ContainerId = containerId })
+                .Key(containerId)
                 .Action("Stop")
                 .Set(new {environment})
                 .ExecuteAsync(cancellationToken);

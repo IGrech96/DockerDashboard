@@ -1,8 +1,8 @@
 ﻿using DockerDashboard.Hubs;
+using DockerDashboard.Shared.Data;
 using DockerDashboard.Shared.Services.Environment;
 using Microsoft.AspNetCore.SignalR;
 using System.Collections.Concurrent;
-using System.Runtime.CompilerServices;
 
 namespace DockerDashboard.Services.Environment;
 
@@ -16,9 +16,9 @@ public class DockerEnvironmentManager : IDockerEnvironmentManager, IHostedServic
         _hubContex = hubContex;
     }
 
-    public async IAsyncEnumerable<DockerEnvironment> GetAllEnvironmentsAsync([EnumeratorCancellation] CancellationToken cancellationToken)
+    public IAsyncEnumerable<DockerEnvironment> GetAllEnvironmentsAsync(CancellationToken cancellationToken)
     {
-        yield return new DockerEnvironment() { Id = 1, Name ="Local" };
+        return new DockerEnvironment[]{new() { Id = 1, Name ="Local" }}.ToAsyncEnumerable();
     }
 
 

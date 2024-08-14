@@ -17,19 +17,18 @@
     </RadzenStack>
 </SectionContent>
 
-<ContainerDetailsWrapper @ref="_containerDetailsComponent" EnvironmentId="environmentId" Container="@_containerDetails" CompactMode="false"></ContainerDetailsWrapper>
+<ContainerDetailsWrapper @ref="_containerDetailsComponent" EnvironmentId="EnvironmentId" Container="@_containerDetails" CompactMode="false"></ContainerDetailsWrapper>
 
 @code {
     [Parameter]
-    public long environmentId { get; set; }
+    public long EnvironmentId { get; set; }
 
     [Parameter]
-    public string? containerId { get; set; }
+    public string? ContainerId { get; set; }
 
     private ContainerModel? _containerDetails;
     private ContainerDetailsWrapper? _containerDetailsComponent;
-    private HubConnection _hubConnection;
-    private bool _isWatchEnabled = false;
+    private HubConnection? _hubConnection;
 
     protected override async Task OnInitializedAsync()
     {
@@ -39,9 +38,9 @@
            .WithUrl(Navigation.ToAbsoluteUri("/containerDetailsHub"))
            .Build();
 
-        _hubConnection.On<UpdateContainerEvent>(HubRouting.ContainerUpdateMethod(environmentId), OnContainerEvent);
-        _hubConnection.On<CreateContainerEvent>(HubRouting.ContainerUpdateMethod(environmentId), OnContainerEvent);
-        _hubConnection.On<ContainerLogEvent>(HubRouting.ContainerLogMethod(environmentId), OnContainerEvent);
+        _hubConnection.On<UpdateContainerEvent>(HubRouting.ContainerUpdateMethod(EnvironmentId), OnContainerEvent);
+        _hubConnection.On<CreateContainerEvent>(HubRouting.ContainerUpdateMethod(EnvironmentId), OnContainerEvent);
+        _hubConnection.On<ContainerLogEvent>(HubRouting.ContainerLogMethod(EnvironmentId), OnContainerEvent);
 
         await _hubConnection.StartAsync();
     }
@@ -50,7 +49,10 @@
     {
         if (_containerDetails?.ContainerId == @event.ContainerId)
         {
-            await _containerDetailsComponent.UpdateAsync(@event);
+            if (_containerDetailsComponent != null)
+            {
+                await _containerDetailsComponent.UpdateAsync(@event);
+            }
         }
     }
 
@@ -58,12 +60,18 @@
     {
         await base.OnParametersSetAsync();
 
-        _containerDetails = await DockerHostManager.GetContainerAsync(environmentId, containerId, CancellationToken.None);
-        StateHasChanged();
+        if (ContainerId != null)
+        {
+            _containerDetails = await DockerHostManager.GetContainerAsync(EnvironmentId, ContainerId, CancellationToken.None);
+            StateHasChanged();
+        }
     }
 
     async ValueTask IAsyncDisposable.DisposeAsync()
     {
-        await _hubConnection.DisposeAsync();
+        if (_hubConnection != null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
     }
 }

@@ -47,7 +47,10 @@ public class ContainersController : ODataController
     [HttpPost]
     public async Task<ActionResult> Stop([FromRoute] string key, ODataActionParameters? parameters, CancellationToken cancellationToken)
     {
-        var environment = (long)parameters["environment"];
+        if (parameters?.TryGetValue("environment", out var arg) != true || arg is not long {} environment)
+        {
+            return BadRequest("'environment' is not provided.");
+        }
         await _hostManager.StopContainerAsync(environment, key, cancellationToken);
         return NoContent();
     }
@@ -55,7 +58,10 @@ public class ContainersController : ODataController
     [HttpPost]
     public async Task<ActionResult> Start([FromRoute] string key, ODataActionParameters? parameters, CancellationToken cancellationToken)
     {
-        var environment = (long)parameters["environment"];
+        if (parameters?.TryGetValue("environment", out var arg) != true || arg is not long {} environment)
+        {
+            return BadRequest("'environment' is not provided.");
+        }
         await _hostManager.StartContainerAsync(environment, key, cancellationToken);
         return NoContent();
     }
@@ -70,7 +76,10 @@ public class ContainersController : ODataController
     [HttpPost]
     public async Task<ActionResult> Restart([FromRoute] string key, ODataActionParameters? parameters, CancellationToken cancellationToken)
     {
-        var environment = (long)parameters["environment"];
+        if (parameters?.TryGetValue("environment", out var arg) != true || arg is not long {} environment)
+        {
+            return BadRequest("'environment' is not provided.");
+        }
         await _hostManager.RestartContainerAsync(environment, key, cancellationToken);
         return NoContent();
     }
@@ -78,7 +87,10 @@ public class ContainersController : ODataController
     [HttpPost]
     public async Task<ActionResult> Pause([FromRoute] string key, ODataActionParameters? parameters, CancellationToken cancellationToken)
     {
-        var environment = (long)parameters["environment"];
+        if (parameters?.TryGetValue("environment", out var arg) != true || arg is not long {} environment)
+        {
+            return BadRequest("'environment' is not provided.");
+        }
         await _hostManager.PauseContainerAsync(environment, key, cancellationToken);
         return NoContent();
     }

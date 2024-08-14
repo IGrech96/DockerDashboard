@@ -82,7 +82,6 @@ app.UseRouting();
 //app.UseODataRouteDebug();
 
 app.MapRazorPages();
-app.MapControllers();
 app.MapFallbackToFile("index.html");
 
 //app.MapFallbackToPage("/_Host");
@@ -90,6 +89,5 @@ app.MapFallbackToFile("index.html");
 app.MapHub<ContainerDetailsHub>("/containerDetailsHub");
 
 
-
-app.UseEndpoints(endpoints => endpoints.MapControllers());
+app.MapControllers();
 app.Run();

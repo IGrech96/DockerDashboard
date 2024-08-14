@@ -1,7 +1,7 @@
 # Features
 
 * [x] Client-Server approach
-* [ ] Warnings as Errors
+* [x] Warnings as Errors
 * [ ] Error handling with user notifcation
 * [ ] Server side userfriendly exceptions
 * [ ] Complete burger menu functionality
