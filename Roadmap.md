@@ -1,6 +1,6 @@
 # Features
 
-* [ ] Client-Server approach
+* [x] Client-Server approach
 * [ ] Warnings as Errors
 * [ ] Error handling with user notifcation
 * [ ] Server side userfriendly exceptions
