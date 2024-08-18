@@ -14,9 +14,11 @@
 			* [ ] Stats
 			* [ ] Files
 		* [ ] Create new
+		* [ ] Fetch new version
 	* [ ] Images
 		* [ ] Pull/Fetch new image/tag
 		* [ ] Run container
+		* [ ] Show target platform
 	* [ ] Volumes
 	* [ ] Logs
 	* [ ] Host
