@@ -1,4 +1,5 @@
-﻿using Docker.DotNet;
+﻿using System.Globalization;
+using Docker.DotNet;
 using Docker.DotNet.Models;
 using DockerDashboard.Hubs;
 using Microsoft.AspNetCore.SignalR;
@@ -35,17 +36,35 @@ public class DockerHost
         return Task.CompletedTask;
     }
 
-    internal async IAsyncEnumerable<string> GetLogsAsync(string containerId, DateTimeOffset since, DateTimeOffset until, [EnumeratorCancellation] CancellationToken cancellationToken)
+    internal async IAsyncEnumerable<ContainerLog> GetLogsAsync(string containerId,
+        DateTimeOffset? since,
+        DateTimeOffset? until,
+        long? top,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        using var multiStream = await _client.Containers.GetContainerLogsAsync(containerId, false, new ContainerLogsParameters
+        var parameters = new ContainerLogsParameters
         {
             ShowStderr = true,
             ShowStdout = true,
             Timestamps = true,
-            Since = since.ToUnixTimeSeconds().ToString(),
-            Until = until.ToUnixTimeSeconds().ToString()
-        },
-        cancellationToken);
+            Tail = "100"
+        };
+        if (since.HasValue)
+        {
+            parameters.Since = since.Value.ToUnixTimeSeconds().ToString();
+        }
+
+        if (until.HasValue)
+        {
+            parameters.Until = until.Value.ToUnixTimeSeconds().ToString();
+        }
+
+        if (top.HasValue)
+        {
+            parameters.Tail = top.Value.ToString();
+        }
+
+        using var multiStream = await _client.Containers.GetContainerLogsAsync(containerId, false, parameters, cancellationToken);
 
         var underlyingStream = multiStream.GetStream();
         using var reader = new StreamReader(underlyingStream, Encoding.UTF8, false);
@@ -53,7 +72,46 @@ public class DockerHost
         {
             var line = await reader.ReadLineAsync(cancellationToken);
             if (line is null) break;
-            yield return line;
+
+            var log = ParseLog(line.AsSpan());
+            if (log is not null)
+            {
+                yield return log;
+            }
+        }
+
+        static ContainerLog? ParseLog(ReadOnlySpan<char> line)
+        {
+            var start = 0;
+
+            while (start < line.Length && line[start] is '\u0001' or '\u0000' or '\0')
+            {
+                start++;
+            }
+
+            if (start < line.Length)
+            {
+                start++;
+            }
+
+            if (start < line.Length)
+            {
+                line = line.Slice(start);
+            }
+
+            //2014-09-16T06:17:46.000000000Z
+            var format = "yyyy-MM-ddTHH:mm:ss.sssssssssZ";
+
+            if (format.Length < line.Length)
+            {
+                var maybeTimestamp = line.Slice(0, format.Length);
+                if (DateTime.TryParse(maybeTimestamp, out var timeStamp))
+                {
+                    return new(timeStamp, new string(line.Slice(format.Length)));
+                }
+            }
+
+            return null;
         }
     }
 
@@ -103,7 +161,7 @@ public class DockerHost
     }
 
     
-    public async Task<ContainerModel> GetContainer(string containerId, CancellationToken cancellationToken)
+    public async Task<ContainerModel?> GetContainer(string containerId, CancellationToken cancellationToken)
     {
         var data = await _client.Containers.ListContainersAsync(new ContainersListParameters()
         {
@@ -114,10 +172,13 @@ public class DockerHost
         return ToContainer(data.First());
     }
 
-    public async Task<ContainerDetailedModel> GetContainerDetails(string containerId, CancellationToken cancellationToken)
+    public async Task<ContainerDetailedModel?> GetContainerDetails(string containerId, CancellationToken cancellationToken)
     {
         var data = await _client.Containers.InspectContainerAsync(containerId, cancellationToken);
-
+        if (data == null)
+        {
+            return null;
+        }
         var result = ToContainer(data);
         return result;
     }
@@ -161,9 +222,9 @@ public class DockerHost
     {
         ContainerEvent? @event = message.Status switch
         {
-            "create" => new CreateContainerEvent(message.ID, await GetContainer(message.ID, cancellationToken)),
+            "create" => new CreateContainerEvent(message.ID, (await GetContainer(message.ID, cancellationToken))!),
             "destroy" => new DestroyContainerEvent(message.ID),
-            _ when !string.IsNullOrWhiteSpace(message.ID) => new UpdateContainerEvent(message.ID, await GetContainer(message.ID, cancellationToken)),
+            _ when !string.IsNullOrWhiteSpace(message.ID) => new UpdateContainerEvent(message.ID, (await GetContainer(message.ID, cancellationToken))!),
             _ => null,
         };
         

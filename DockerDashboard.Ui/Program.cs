@@ -2,6 +2,7 @@ using DockerDashboard.Shared.Services;
 using DockerDashboard.Shared.Services.Environment;
 using DockerDashboard.Ui;
 using DockerDashboard.Ui.Clients;
+using DockerDashboard.Ui.Logging;
 using DockerDashboard.Ui.Services;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
@@ -36,6 +37,13 @@ builder.Services.AddKeyedScoped<ODataClient>(ClientCategory.Backend, (provider, 
     
     return client;
 });
+
+var userNotificationsProvider = new UserNotificationsProvider();
+builder.Services.AddSingleton<IUserNotificationsPublisher>(userNotificationsProvider);
+builder.Services.AddSingleton<IUserNotificationsConsumer>(userNotificationsProvider);
+
+
+builder.Services.AddLogging(b => b.AddProvider(new UiLoggerProvider(userNotificationsProvider)));
 
 // Supply HttpClient instances that include access tokens when making requests to the server project
 builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient(ClientCategory.Backend));

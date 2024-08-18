@@ -6,11 +6,11 @@ public interface IDockerHostManager
 {
     IAsyncEnumerable<ContainerModel> GetContainers(long environment, string? beforeContainerId, long? take, CancellationToken cancellationToken);
 
-    Task<ContainerModel> GetContainerAsync(long environment, string containerId, CancellationToken cancellationToken);
+    Task<ContainerModel?> TryGetContainerAsync(long environment, string containerId, CancellationToken cancellationToken);
 
-    IAsyncEnumerable<string> GetContainerLogsAsync(long environment, string containerId, DateTimeOffset since, DateTimeOffset until);
+    IAsyncEnumerable<ContainerLog> GetContainerLogsAsync(long environment, string containerId, DateTimeOffset? since, DateTimeOffset? until, long? top, CancellationToken cancellationToken);
 
-    Task<ContainerDetailedModel> GetContainerDetails(long environment, string containerId, CancellationToken cancellationToken);
+    Task<ContainerDetailedModel?> TryGetContainerDetails(long environment, string containerId, CancellationToken cancellationToken);
 
     Task PauseContainerAsync(long environment, string containerId, CancellationToken cancellationToken);
 

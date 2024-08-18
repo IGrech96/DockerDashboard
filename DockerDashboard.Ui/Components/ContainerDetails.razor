@@ -40,13 +40,15 @@
 
             @if (_logsLoaded)
             {
-                <RadzenDataList AllowVirtualization="true" Style="height:400px;overflow:auto;"
+                <RadzenDataGrid AllowVirtualization="true" Style="overflow:auto;"
                                 WrapItems="false" AllowPaging="false"
-                                Data="_logs" TItem="string" PagerHorizontalAlign="HorizontalAlign.Left">
-                    <Template Context="log">
-                        <div class="box">@log</div>
-                    </Template>
-                </RadzenDataList>
+                                TItem="ContainerLog"
+                                Data="_logs" PagerHorizontalAlign="HorizontalAlign.Left">
+                    <Columns>
+                        <RadzenDataGridColumn Title="Time" Property="Timestamp"></RadzenDataGridColumn>
+                        <RadzenDataGridColumn Title="Message" Property="Log"></RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
             }
             else
             {
@@ -59,37 +61,48 @@
             }
         </RadzenTabsItem>
         <RadzenTabsItem Text="Details">
-            <RadzenDataGrid Data="@_containerDetailedInfo" Render="@OnRender">
-                <Columns>
-                    <RadzenDataGridColumn Title="Name" Property="Name"></RadzenDataGridColumn>
-                    <RadzenDataGridColumn Title="Value" Property="Value">
-                        <Template Context="data">
-                            @if (data.Value is DateTime dateTime)
-                            {
-                                @dateTime.ToString("yyyy-MM-dd hh:mm:ss")
-                            }
-                            else if (data is { Name: "Image", Value: not null })
-                            {
-                                <a href="">@data.Value.ToString()!.TrimStart('/')</a>
-                            }
-                            else if (data.Value is MountPoint mount)
-                            {
-                                <p>type=@mount.Type,source=@mount.Source,target=@mount.Destination </p>
-                                <p>Readonly=@(!mount.RW)</p>
-                                <p>Propagation=@mount.Propagation</p>
-                            }
-                            else if (data is { Name: "Status", Value: ContainerStatus.NA })
-                            {
-                                <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" />
-                            }
-                            else
-                            {
-                                @data.Value?.ToString()
-                            }
-                        </Template>
-                    </RadzenDataGridColumn>
-                </Columns>
-            </RadzenDataGrid>
+            @if (_detailsLoaded)
+            {
+                <RadzenDataGrid Data="@_containerDetailedInfo" Render="@OnRender">
+                    <Columns>
+                        <RadzenDataGridColumn Title="Name" Property="Name"></RadzenDataGridColumn>
+                        <RadzenDataGridColumn Title="Value" Property="Value">
+                            <Template Context="data">
+                                @if (data.Value is DateTime dateTime)
+                                {
+                                    @dateTime.ToString("yyyy-MM-dd hh:mm:ss")
+                                }
+                                else if (data is { Name: "Image", Value: not null })
+                                {
+                                    <a href="">@data.Value.ToString()!.TrimStart('/')</a>
+                                }
+                                else if (data.Value is MountPoint mount)
+                                {
+                                    <p>type=@mount.Type,source=@mount.Source,target=@mount.Destination </p>
+                                    <p>Readonly=@(!mount.RW)</p>
+                                    <p>Propagation=@mount.Propagation</p>
+                                }
+                                else if (data is { Name: "Status", Value: ContainerStatus.NA })
+                                {
+                                    <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate"/>
+                                }
+                                else
+                                {
+                                    @data.Value?.ToString()
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            }
+            else
+            {
+                <RadzenStack AlignItems="AlignItems.Center">
+                    <RadzenProgressBarCircular ShowValue="true" Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Large">
+                        <Template>Loading...</Template>
+                    </RadzenProgressBarCircular>
+                </RadzenStack>
+            }
         </RadzenTabsItem>
         <RadzenTabsItem Text="Inspect"></RadzenTabsItem>
         <RadzenTabsItem Text="Stats"></RadzenTabsItem>
@@ -106,9 +119,11 @@
     private CommonInfo[] _containerCommonInfo = [];
     private DetailedInfo[] _containerDetailedInfo = [];
     private bool _logsLoaded = false;
+    private bool _detailsLoaded = false;
 
-    private List<string> _logs = [];
-    // private readonly CancellationTokenSource _timerCancellationToken = new();
+    //TODO: more efficient container
+    private List<ContainerLog> _logs = [];
+    private readonly CancellationTokenSource _timerCancellationToken = new();
     // private DateTimeOffset _previousOffset = new DateTimeOffset(0, TimeSpan.Zero);
 
 
@@ -155,10 +170,11 @@
     {
         if (index == 1)
         {
+            _detailsLoaded = false;
             if (EnvironmentId.HasValue && Container != null)
             {
-                var details = await DockerHostManager.GetContainerDetails(EnvironmentId.Value, Container.ContainerId, CancellationToken.None);
-                _containerDetailedInfo =
+                var details = await DockerHostManager.TryGetContainerDetails(EnvironmentId.Value, Container.ContainerId, CancellationToken.None);
+                _containerDetailedInfo = details == null ? [] :
                 [
                     new("Common", "EntryPoint", string.Join(" ", details.EntryPoint)),
                     new("Common", "Command", string.Join(" ", details.Command)),
@@ -170,6 +186,7 @@
                     ..details.Labels.Select(r => new DetailedInfo("Labels", r.Key, r.Value)),
                     ..details.Mounts.Where(_ => _.Name != null).Select(r => new DetailedInfo("Mounts", r.Name!, r)),
                 ];
+                _detailsLoaded = true;
             }
             else
             {
@@ -184,61 +201,74 @@
     {
         await base.OnAfterRenderAsync(firstRender);
 
-        // if (firstRender)
-        // {
-        //     if (EnvironmentId.HasValue && Container != null)
-        //     {
-        //         var now = DateTimeOffset.UtcNow;
-        //         var logsEnumeration = DockerHostManager.GetContainerLogsAsync(EnvironmentId.Value, Container.ContainerId, _previousOffset, now);
-        //         var counter = 0;
-        //         await foreach (var log in logsEnumeration)
-        //         {
-        //             _logsLoaded = true;
-        //             _logs.Add(log);
-        //             counter++;
-
-        //             if (counter % 100 == 0)
-        //             {
-        //                 await InvokeAsync(StateHasChanged);
-        //             }
-        //         }
-        //         _previousOffset = now;
-
-        //         await InvokeAsync(StateHasChanged);
-        //     }
-
-        //     using var timer = new PeriodicTimer(TimeSpan.FromSeconds(10));
-        //     while (!_timerCancellationToken.IsCancellationRequested && await timer.WaitForNextTickAsync())
-        //     {
-        //         if (EnvironmentId.HasValue && Container != null)
-        //         {
-        //             var now = DateTimeOffset.UtcNow;
-        //             var logsEnumeration = DockerHostManager.GetContainerLogsAsync(EnvironmentId.Value, Container.ContainerId, _previousOffset, now);
-        //             var counter = 0;
-        //             await foreach (var log in logsEnumeration)
-        //             {
-        //                 _logsLoaded = true;
-        //                 _logs.Add(log);
-        //                 counter++;
-
-        //                 if (counter % 100 == 0)
-        //                 {
-        //                     await InvokeAsync(StateHasChanged);
-        //                 }
-        //             }
-        //             _previousOffset = now;
-
-        //             await InvokeAsync(StateHasChanged);
-        //         }
-        //     }
-        // Make sure any subsequent logic is not called after the component is disposed
+        if (firstRender && EnvironmentId.HasValue && Container != null)
+        {
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+            ObserveLogs();
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+        }
         // return;
+    }
+
+    private async Task ObserveLogs()
+    {
+        if (EnvironmentId.HasValue && Container != null)
+        {
+            const int pageSize = 100;
+            var until = DateTimeOffset.UtcNow;
+            int counter = pageSize;
+            while (counter >= pageSize)
+            {
+                var logsEnumeration = await DockerHostManager.GetContainerLogsAsync(
+                        EnvironmentId.Value,
+                        Container.ContainerId,
+                        null,
+                        until,
+                        pageSize,
+                        CancellationToken.None)
+                    .ToArrayAsync();
+
+                counter = logsEnumeration.Length;
+                _logsLoaded = true;
+                _logs.AddRange(logsEnumeration);
+
+                if (logsEnumeration.Any())
+                {
+                    until = new DateTimeOffset(logsEnumeration.MinBy(_ => _.Timestamp)!.Timestamp);
+                }
+
+                await InvokeAsync(StateHasChanged);
+            }
+
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(10));
+            var since = new DateTimeOffset(_logs.MaxBy(_ => _.Timestamp)?.Timestamp ?? DateTime.UtcNow);
+            while (!_timerCancellationToken.IsCancellationRequested && await timer.WaitForNextTickAsync())
+            {
+                if (EnvironmentId.HasValue && Container != null)
+                {
+                    var logsEnumeration = await DockerHostManager.GetContainerLogsAsync(EnvironmentId.Value, Container.ContainerId, since, null, pageSize, CancellationToken.None).ToArrayAsync();
+                    
+                    _logsLoaded = true;
+                    _logs.InsertRange(0, logsEnumeration);
+
+                    if (logsEnumeration.Any())
+                    {
+                        since = new DateTimeOffset(logsEnumeration.MaxBy(_ => _.Timestamp)!.Timestamp);
+                    }
+
+                    await InvokeAsync(StateHasChanged);
+                }
+            }
+
+        }
+
+        //Make sure any subsequent logic is not called after the component is disposed
     }
 
     public void Dispose()
     {
-        // _timerCancellationToken.Cancel();
-        // _timerCancellationToken.Dispose();
+        _timerCancellationToken.Cancel();
+        _timerCancellationToken.Dispose();
         GC.SuppressFinalize(this);
     }
 }

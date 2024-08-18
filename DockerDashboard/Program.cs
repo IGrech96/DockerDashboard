@@ -1,4 +1,5 @@
 using DockerDashboard.Hubs;
+using DockerDashboard.OData;
 using DockerDashboard.Services.DockerHost;
 using DockerDashboard.Services.Environment;
 using DockerDashboard.Shared.Data;
@@ -23,36 +24,18 @@ builder.Services.AddScoped<IPageDetailsNotificationService, SimplePageDetailsNot
 builder.Services.AddSingleton<DockerEnvironmentManager>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<DockerEnvironmentManager>());
 builder.Services.AddSingleton<IDockerEnvironmentManager>(sp => sp.GetRequiredService<DockerEnvironmentManager>());
+builder.Services.AddSingleton<IEdmBuilder, DefaultEdmBuilder>();
 
 builder.Services.AddSwaggerGen(c =>
     {
         c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });                
     });
 
-static IEdmModel GetEdmModel()
-{
-    ODataConventionModelBuilder builder = new();
-    builder.EntitySet<ContainerModel>("Containers");
-    builder.EntitySet<DockerEnvironment>("DockerEnvironments");
-    builder.EntitySet<ContainerDetailedModel>("Details").EntityType.HasKey(k => k.ContainerId);
-
-    var containerDetailsFunction = builder.EntityType<ContainerModel>().Function("Details");
-    containerDetailsFunction.Parameter<long>("environment");
-    containerDetailsFunction.ReturnsFromEntitySet<ContainerDetailedModel>("Details");
-
-    builder.EntityType<ContainerModel>().Action("Stop").Parameter<long>("environment").Required();
-    builder.EntityType<ContainerModel>().Action("Start").Parameter<long>("environment").Required();
-    builder.EntityType<ContainerModel>().Action("Pause").Parameter<long>("environment").Required();
-    builder.EntityType<ContainerModel>().Action("Restart").Parameter<long>("environment").Required();
-
-    return builder.GetEdmModel();
-}
-
 
 builder.Services
     .AddControllers()
     .AddApplicationPart(typeof(MetadataController).Assembly)
-    .AddOData(opt => opt.AddRouteComponents("odata", GetEdmModel()).SkipToken());
+    .AddDockerDashboardOData();
 
 var app = builder.Build();
 
@@ -79,7 +62,7 @@ app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
 
 app.UseRouting();
-//app.UseODataRouteDebug();
+app.UseODataRouteDebug();
 
 app.MapRazorPages();
 app.MapFallbackToFile("index.html");
@@ -90,4 +73,6 @@ app.MapHub<ContainerDetailsHub>("/containerDetailsHub");
 
 
 app.MapControllers();
+
+
 app.Run();

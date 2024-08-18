@@ -31,16 +31,33 @@ public class ContainersController : ODataController
             null);
     }
 
-    public async Task<ContainerModel> Get(long environment, [FromRoute] string key,  CancellationToken cancellationToken)
+    public async Task<ContainerModel?> Get(long environment, [FromRoute] string key,  CancellationToken cancellationToken)
     {
-        var data = await _hostManager.GetContainerAsync(environment, key, cancellationToken);
+        var data = await _hostManager.TryGetContainerAsync(environment, key, cancellationToken);
         return data;
     }
 
     [HttpGet]
-    public async Task<ContainerDetailedModel> Details(long environment, [FromODataUri] string key, CancellationToken cancellationToken)
+    public async Task<ContainerDetailedModel?> Details(long environment, [FromODataUri] string key, CancellationToken cancellationToken)
     {
-        var data = await _hostManager.GetContainerDetails(environment, key, cancellationToken);
+        var data = await _hostManager.TryGetContainerDetails(environment, key, cancellationToken);
+        return data;
+    }
+
+    [HttpGet]
+    public async  Task<ContainerLog[]> Logs(
+        ODataQueryOptions<ContainerModel> options,
+        long environment, 
+        [FromODataUri] string key,
+        DateTimeOffset? until,
+        DateTimeOffset? since, 
+        CancellationToken cancellationToken)
+    {
+        var top = (long?)options.Top?.Value;
+        var data = await _hostManager
+            .GetContainerLogsAsync(environment, key, since, until, top, cancellationToken)
+            .ToArrayAsync(cancellationToken: cancellationToken);
+
         return data;
     }
 

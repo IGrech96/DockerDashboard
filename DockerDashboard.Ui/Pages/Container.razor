@@ -62,7 +62,7 @@
 
         if (ContainerId != null)
         {
-            _containerDetails = await DockerHostManager.GetContainerAsync(EnvironmentId, ContainerId, CancellationToken.None);
+            _containerDetails = await DockerHostManager.TryGetContainerAsync(EnvironmentId, ContainerId, CancellationToken.None);
             StateHasChanged();
         }
     }

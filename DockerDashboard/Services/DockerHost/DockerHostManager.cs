@@ -13,7 +13,7 @@ public class DockerHostManager : IDockerHostManager
         _dockerEnvironmentManager = dockerEnvironmentManager;
     }
 
-    public Task<ContainerModel> GetContainerAsync(long environment, string containerId, CancellationToken cancellationToken)
+    public Task<ContainerModel?> TryGetContainerAsync(long environment, string containerId, CancellationToken cancellationToken)
     {
          var host = _dockerEnvironmentManager.GetHost(environment);
 
@@ -27,15 +27,17 @@ public class DockerHostManager : IDockerHostManager
         return host.GetContainers(beforeContainerId, take, cancellationToken);
     }
 
-    public IAsyncEnumerable<string> GetContainerLogsAsync(long environment, string containerId, DateTimeOffset since,
-        DateTimeOffset until)
+    public IAsyncEnumerable<ContainerLog> GetContainerLogsAsync(long environment,
+        string containerId,
+        DateTimeOffset? since,
+        DateTimeOffset? until, long? top, CancellationToken cancellationToken)
     {
         var host = _dockerEnvironmentManager.GetHost(environment);
 
-        return host.GetLogsAsync(containerId, since, until, CancellationToken.None);
+        return host.GetLogsAsync(containerId, since, until, top, cancellationToken);
     }
 
-    public Task<ContainerDetailedModel> GetContainerDetails(long environment, string containerId, CancellationToken cancellationToken)
+    public Task<ContainerDetailedModel?> TryGetContainerDetails(long environment, string containerId, CancellationToken cancellationToken)
     {
         var host = _dockerEnvironmentManager.GetHost(environment);
 
