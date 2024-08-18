@@ -9,7 +9,7 @@ WORKDIR "/src/DockerDashboard"
 RUN dotnet restore "./DockerDashboard.csproj" -a $TARGETARCH
 RUN dotnet publish "./DockerDashboard.csproj" -a $TARGETARCH --no-restore -c $BUILD_CONFIGURATION -o /app/publish
 
-FROM mcr.microsoft.com/dotnet/runtime:8.0
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 COPY --from=build /app/publish .
 USER $APP_UID
