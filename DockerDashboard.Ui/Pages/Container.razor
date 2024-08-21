@@ -39,7 +39,7 @@
            .Build();
 
         _hubConnection.On<UpdateContainerEvent>(HubRouting.ContainerUpdateMethod(EnvironmentId), OnContainerEvent);
-        _hubConnection.On<CreateContainerEvent>(HubRouting.ContainerUpdateMethod(EnvironmentId), OnContainerEvent);
+        _hubConnection.On<CreateContainerEvent>(HubRouting.ContainerCreateMethod(EnvironmentId), OnContainerEvent);
         _hubConnection.On<ContainerLogEvent>(HubRouting.ContainerLogMethod(EnvironmentId), OnContainerEvent);
 
         await _hubConnection.StartAsync();

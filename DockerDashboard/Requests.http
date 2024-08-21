@@ -1,6 +1,7 @@
 # For more info on HTTP files go to https://aka.ms/vs/httpfile
 
-@baseUrl=https://localhost:7105
+@baseUrl=http://192.168.100.140:63834
+#https://localhost:7105
 @containerId=6b0e7df8777a50458bc899929b5322e94ec4b54299d61e42a36bd06ab7333412
 @environmentId=1
 
@@ -11,6 +12,11 @@ GET {{baseUrl}}/odata
 ###
 
 GET {{baseUrl}}/odata/$metadata
+
+###
+
+# Get Container Details
+GET http://192.168.100.140:63834/odata/Containers?environment=1&$count=true
 
 ###
 

@@ -20,11 +20,7 @@
     </RadzenStack>
 </SectionContent>
 
-<RadzenLayout Style="grid-template-columns: 1fr auto; grid-template-areas: 'rz-header rz-sidebar' 'rz-body rz-sidebar'">
-    <RadzenBody>
-        <ContainersGrid @ref="_grid" EnvironmentId="EnvironmentId" ContainerOpen="OnContainerOpen"></ContainersGrid>
-    </RadzenBody>    
-</RadzenLayout>
+<ContainersGrid @ref="_grid" EnvironmentId="EnvironmentId" ContainerOpen="OnContainerOpen"></ContainersGrid>
 
 @if (_containerDetails != null)
 {
@@ -41,22 +37,38 @@
     private ContainerDetailsWrapper? _containerDetailsComponent;
     private ContainerModel? _containerDetails;
     private HubConnection? _hubConnection;
+    private long? _previousEnvironment;
 
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
 
         _hubConnection = new HubConnectionBuilder()
+            //.AddJsonProtocol(op => op.PayloadSerializerOptions.)
             .WithUrl(Navigation.ToAbsoluteUri("/containerDetailsHub"))
             .Build();
-
-        _hubConnection.On<UpdateContainerEvent>(HubRouting.ContainerUpdateMethod(EnvironmentId), OnContainerUpdate);
-        _hubConnection.On<CreateContainerEvent>(HubRouting.ContainerUpdateMethod(EnvironmentId), OnContainerUpdate);
-        _hubConnection.On<DestroyContainerEvent>(HubRouting.ContainerUpdateMethod(EnvironmentId), OnContainerUpdate);
-        _hubConnection.On<ContainerLogEvent>(HubRouting.ContainerLogMethod(EnvironmentId), OnContainerUpdate);
-
-
         await _hubConnection.StartAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+        if (_hubConnection != null)
+        {
+            if (_previousEnvironment.HasValue && EnvironmentId != _previousEnvironment)
+            {
+                _hubConnection.Remove(HubRouting.ContainerUpdateMethod(_previousEnvironment.Value));
+                _hubConnection.Remove(HubRouting.ContainerCreateMethod(_previousEnvironment.Value));
+                _hubConnection.Remove(HubRouting.ContainerDestroyMethod(_previousEnvironment.Value));
+                _previousEnvironment = EnvironmentId;
+            }
+
+            _hubConnection.On<UpdateContainerEvent>(HubRouting.ContainerUpdateMethod(EnvironmentId), OnContainerUpdate);
+            _hubConnection.On<CreateContainerEvent>(HubRouting.ContainerCreateMethod(EnvironmentId), OnContainerUpdate);
+            _hubConnection.On<DestroyContainerEvent>(HubRouting.ContainerDestroyMethod(EnvironmentId), OnContainerUpdate);
+            _hubConnection.On<ContainerLogEvent>(HubRouting.ContainerLogMethod(EnvironmentId), OnContainerUpdate);
+
+        }
     }
 
     private async Task OnContainerOpen(ContainerModel arg)

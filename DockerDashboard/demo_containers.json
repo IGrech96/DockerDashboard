@@ -1,0 +1,143 @@
+{
+  "value": [
+    {
+      "ContainerId": "1b77e4a095d335113fe975644375914723b157a7ba083c9b1f2c656999476e03",
+      "ContainerName": "/dashboard-dockerdashboard-1",
+      "ImageName": "ivang2896044/dockerdashboard:latest",
+      "Status": "Running",
+      "Created": "2024-08-18T15:31:43Z",
+      "Ports": [
+        {
+          "LocalPort": 63835,
+          "Port": 443
+        },
+        {
+          "LocalPort": 63835,
+          "Port": 443
+        },
+        {
+          "LocalPort": 63834,
+          "Port": 80
+        },
+        {
+          "LocalPort": 63834,
+          "Port": 80
+        }
+      ]
+    },
+    {
+      "ContainerId": "381c755f619d74fce610ee7c554492207901e83fcc98d2f48488f202846e3c0b",
+      "ContainerName": "/receipt_storage-receipt_storage-1",
+      "ImageName": "ivang2896044/receiptstorage:latest",
+      "Status": "Running",
+      "Created": "2024-07-10T17:36:17Z",
+      "Ports": []
+    },
+    {
+      "ContainerId": "bc4e6fb9c8c7494d7969cefbaa7c06e599923e76b0cca64beec9ac980e9c2763",
+      "ContainerName": "/postgres-postgres-1",
+      "ImageName": "postgres:14-alpine",
+      "Status": "Running",
+      "Created": "2024-05-31T18:41:54Z",
+      "Ports": [
+        {
+          "LocalPort": 5432,
+          "Port": 5432
+        },
+        {
+          "LocalPort": 5432,
+          "Port": 5432
+        }
+      ]
+    },
+    {
+      "ContainerId": "a83a0ca4530927256acf2282e45c770b5ab92f4fef884533eec9b702037b8dec",
+      "ContainerName": "/portainer",
+      "ImageName": "portainer/portainer-ce:latest",
+      "Status": "Running",
+      "Created": "2024-05-25T17:28:51Z",
+      "Ports": []
+    },
+    {
+      "ContainerId": "k83a0ca4530927256acf2282e45c770b5ab92f4fef884533eec9b702037b8dec",
+      "ContainerName": "/portainer",
+      "ImageName": "portainer/portainer-ce:latest",
+      "Status": "Running",
+      "Created": "2024-05-25T17:28:51Z",
+      "Ports": []
+    },
+    {
+      "ContainerId": "g83a0ca4530927256acf2282e45c770b5ab92f4fef884533eec9b702037b8dec",
+      "ContainerName": "/portainer",
+      "ImageName": "portainer/portainer-ce:latest",
+      "Status": "Running",
+      "Created": "2024-05-25T17:28:51Z",
+      "Ports": []
+    },
+    {
+      "ContainerId": "i83a0ca4530927256acf2282e45c770b5ab92f4fef884533eec9b702037b8dec",
+      "ContainerName": "/portainer",
+      "ImageName": "portainer/portainer-ce:latest",
+      "Status": "Running",
+      "Created": "2024-05-25T17:28:51Z",
+      "Ports": []
+    },
+    {
+      "ContainerId": "h83a0ca4530927256acf2282e45c770b5ab92f4fef884533eec9b702037b8dec",
+      "ContainerName": "/portainer",
+      "ImageName": "portainer/portainer-ce:latest",
+      "Status": "Running",
+      "Created": "2024-05-25T17:28:51Z",
+      "Ports": []
+    },
+    {
+      "ContainerId": "g83a0ca4530927256acf2282e45c770b5ab92f4fef884533eec9b702037b8dec",
+      "ContainerName": "/portainer",
+      "ImageName": "portainer/portainer-ce:latest",
+      "Status": "Running",
+      "Created": "2024-05-25T17:28:51Z",
+      "Ports": []
+    },
+    {
+      "ContainerId": "f83a0ca4530927256acf2282e45c770b5ab92f4fef884533eec9b702037b8dec",
+      "ContainerName": "/portainer",
+      "ImageName": "portainer/portainer-ce:latest",
+      "Status": "Running",
+      "Created": "2024-05-25T17:28:51Z",
+      "Ports": []
+    },
+    {
+      "ContainerId": "e83a0ca4530927256acf2282e45c770b5ab92f4fef884533eec9b702037b8dec",
+      "ContainerName": "/portainer",
+      "ImageName": "portainer/portainer-ce:latest",
+      "Status": "Running",
+      "Created": "2024-05-25T17:28:51Z",
+      "Ports": []
+    },
+    {
+      "ContainerId": "d83a0ca4530927256acf2282e45c770b5ab92f4fef884533eec9b702037b8dec",
+      "ContainerName": "/portainer",
+      "ImageName": "portainer/portainer-ce:latest",
+      "Status": "Running",
+      "Created": "2024-05-25T17:28:51Z",
+      "Ports": []
+    },
+    {
+      "ContainerId": "c83a0ca4530927256acf2282e45c770b5ab92f4fef884533eec9b702037b8dec",
+      "ContainerName": "/portainer",
+      "ImageName": "portainer/portainer-ce:latest",
+      "Status": "Running",
+      "Created": "2024-05-25T17:28:51Z",
+      "Ports": []
+    },
+    {
+      "ContainerId": "b83a0ca4530927256acf2282e45c770b5ab92f4fef884533eec9b702037b8dec",
+      "ContainerName": "/portainer",
+      "ImageName": "portainer/portainer-ce:latest",
+      "Status": "Running",
+      "Created": "2024-05-25T17:28:51Z",
+      "Ports": []
+    }
+
+  ]
+}

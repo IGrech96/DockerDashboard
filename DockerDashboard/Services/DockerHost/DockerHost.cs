@@ -12,7 +12,7 @@ using DockerDashboard.Shared.Hubs;
 
 namespace DockerDashboard.Services.DockerHost;
 
-public class DockerHost
+public class DockerHost : IDockerHost
 {
     private readonly IDockerClient _client;
     private readonly IHubContext<ContainerDetailsHub> _containerDetailsHub;
@@ -26,7 +26,7 @@ public class DockerHost
         _environment = environment;
     }
 
-    internal Task StartWatchingAsync(CancellationToken cancellationToken)
+    public Task StartWatchingAsync(CancellationToken cancellationToken)
     {
         _watchContainerEventsTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
@@ -36,7 +36,7 @@ public class DockerHost
         return Task.CompletedTask;
     }
 
-    internal async IAsyncEnumerable<ContainerLog> GetLogsAsync(string containerId,
+    public async IAsyncEnumerable<ContainerLog> GetLogsAsync(string containerId,
         DateTimeOffset? since,
         DateTimeOffset? until,
         long? top,
@@ -209,7 +209,7 @@ public class DockerHost
     }
 
 
-    internal async Task StopWatchingAsync(CancellationToken cancellationToken)
+    public async Task StopWatchingAsync(CancellationToken cancellationToken)
     {
         if (_watchContainerEventsTokenSource != null)
         {
@@ -227,10 +227,17 @@ public class DockerHost
             _ when !string.IsNullOrWhiteSpace(message.ID) => new UpdateContainerEvent(message.ID, (await GetContainer(message.ID, cancellationToken))!),
             _ => null,
         };
-        
+
+
+        var methodName = @event switch
+        {
+            CreateContainerEvent create => HubRouting.ContainerCreateMethod(_environment.Id),
+            DestroyContainerEvent destroy => HubRouting.ContainerDestroyMethod(_environment.Id),
+            _ => HubRouting.ContainerUpdateMethod(_environment.Id)
+        };
         if (@event is not null) 
         {
-           await _containerDetailsHub.Clients.All.SendAsync(HubRouting.ContainerUpdateMethod(_environment.Id), @event, cancellationToken);
+           await _containerDetailsHub.Clients.All.SendAsync(methodName, @event, cancellationToken);
         }
 
     }

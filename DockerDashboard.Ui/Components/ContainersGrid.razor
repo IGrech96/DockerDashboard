@@ -5,7 +5,7 @@
 @inject NavigationManager Navigation
 @inject ContextMenuService ContextMenuService
 
-<RadzenDataGrid @ref=_grid Data="@_orderedContainers" AllowVirtualization="true" Style="height:400px"
+<RadzenDataGrid @ref=_grid Data="@_orderedContainers" AllowVirtualization="true" Style="overflow:auto;"
                 AllowFiltering="true" FilterPopupRenderMode="PopupRenderMode.OnDemand" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" LogicalFilterOperator="LogicalFilterOperator.Or"
                 AllowSorting="true">
     <Columns>
@@ -83,10 +83,12 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         await base.OnAfterRenderAsync(firstRender);
-        if (firstRender)
-        {
-            await RefreshDataAsync();
-        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+        await RefreshDataAsync();
     }
 
     public async Task UpdateContainerAsync(ContainerEvent @event)
@@ -130,6 +132,11 @@
     {
         if (EnvironmentId.HasValue)
         {
+            _orderedContainers = [];
+            await ReloadGridAsync();
+
+            StateHasChanged();
+
             _orderedContainers = await DockerHostManager.GetContainers(EnvironmentId.Value, null, null, CancellationToken.None).ToListAsync();
             await ReloadGridAsync();
 

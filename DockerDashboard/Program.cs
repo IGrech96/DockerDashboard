@@ -1,8 +1,11 @@
+using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using DockerDashboard.Hubs;
 using DockerDashboard.OData;
 using DockerDashboard.Services.DockerHost;
 using DockerDashboard.Services.Environment;
 using DockerDashboard.Shared.Data;
+using DockerDashboard.Shared.Hubs;
 using DockerDashboard.Shared.Services;
 using DockerDashboard.Shared.Services.Environment;
 using Microsoft.AspNetCore.OData;
@@ -10,6 +13,8 @@ using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.OData.Edm;
 using Microsoft.OData.ModelBuilder;
 using Microsoft.OpenApi.Models;
+using Newtonsoft.Json;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +23,10 @@ builder.Services.AddRazorPages();
 builder.Services.AddControllersWithViews();
 
 builder.Services.AddSingleton<IDockerHostManager, DockerHostManager>();
-builder.Services.AddSignalR();
+builder.Services.AddSignalR().AddJsonProtocol(jo =>
+{
+    //jo.PayloadSerializerOptions.TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+});
 
 builder.Services.AddScoped<IPageDetailsNotificationService, SimplePageDetailsNotificationService>();
 builder.Services.AddSingleton<DockerEnvironmentManager>();
@@ -69,10 +77,16 @@ app.MapFallbackToFile("index.html");
 
 //app.MapFallbackToPage("/_Host");
 
+var jsonSerializerSettings = new JsonSerializerSettings
+{
+    // Customize JSON serialization settings
+};
+
+//GlobalHost.DependencyResolver.Register(typeof(JsonSerializer), () => JsonSerializer.Create(jsonSerializerSettings));
+
 app.MapHub<ContainerDetailsHub>("/containerDetailsHub");
 
 
 app.MapControllers();
-
 
 app.Run();

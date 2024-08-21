@@ -24,6 +24,11 @@
 	* [ ] Host
 	* [ ] On Refresh open last active menu item
 * [ ] Fix css styles
+	* [x] container grid does not take the full height
+	* [ ] columns are wrapped
+	* [ ] name of the container looks like a button
+	* [ ] Ports are duplicated
+	* [ ] Ports link are not linkes
 * [x] New Loading splash + Page labels
 * [ ] Authentication
 * [ ] Authorization

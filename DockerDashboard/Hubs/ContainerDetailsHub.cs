@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using DockerDashboard.Shared.Hubs;
+using Microsoft.AspNetCore.SignalR;
 
 namespace DockerDashboard.Hubs;
 
