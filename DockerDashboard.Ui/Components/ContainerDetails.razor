@@ -173,7 +173,7 @@
             _detailsLoaded = false;
             if (EnvironmentId.HasValue && Container != null)
             {
-                var details = await DockerHostManager.TryGetContainerDetails(EnvironmentId.Value, Container.ContainerId, CancellationToken.None);
+                var details = await DockerHostManager.GetContainerManager(EnvironmentId.Value).TryGetContainerDetailsAsync(Container.ContainerId, CancellationToken.None);
                 _containerDetailedInfo = details == null ? [] :
                 [
                     new("Common", "EntryPoint", string.Join(" ", details.EntryPoint)),
@@ -219,8 +219,7 @@
             int counter = pageSize;
             while (counter >= pageSize)
             {
-                var logsEnumeration = await DockerHostManager.GetContainerLogsAsync(
-                        EnvironmentId.Value,
+                var logsEnumeration = await DockerHostManager.GetContainerManager(EnvironmentId.Value).GetContainerLogsAsync(
                         Container.ContainerId,
                         null,
                         until,
@@ -246,7 +245,7 @@
             {
                 if (EnvironmentId.HasValue && Container != null)
                 {
-                    var logsEnumeration = await DockerHostManager.GetContainerLogsAsync(EnvironmentId.Value, Container.ContainerId, since, null, pageSize, CancellationToken.None).ToArrayAsync();
+                    var logsEnumeration = await DockerHostManager.GetContainerManager(EnvironmentId.Value).GetContainerLogsAsync(Container.ContainerId, since, null, pageSize, CancellationToken.None).ToArrayAsync();
                     
                     _logsLoaded = true;
                     _logs.InsertRange(0, logsEnumeration);

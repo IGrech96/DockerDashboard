@@ -27,6 +27,10 @@ public class DefaultEdmBuilder : IEdmBuilder
         builder.EntityType<ContainerModel>().Action("Start").Parameter<long>("environment").Required();
         builder.EntityType<ContainerModel>().Action("Pause").Parameter<long>("environment").Required();
         builder.EntityType<ContainerModel>().Action("Restart").Parameter<long>("environment").Required();
+        
+        var recreateAction = builder.EntityType<ContainerModel>().Action("Recreate");
+        recreateAction.Parameter<long>("environment").Required();
+        recreateAction.Parameter<bool>("pullImage").Optional();
 
         var logsFunction = builder.EntityType<ContainerModel>().Function("Logs");
         logsFunction.Parameter<long>("environment").Required();

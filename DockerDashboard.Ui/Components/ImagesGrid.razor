@@ -137,7 +137,7 @@
 
             StateHasChanged();
 
-            _orderedContainers = await DockerHostManager.GetContainerManager(EnvironmentId!.Value).GetContainersAsync(null, null, CancellationToken.None).ToListAsync();
+            _orderedContainers = await DockerHostManager.GetContainerManager(EnvironmentId.Value).GetContainersAsync(null, null, CancellationToken.None).ToListAsync();
             await ReloadGridAsync();
 
             StateHasChanged();

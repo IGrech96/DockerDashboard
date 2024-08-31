@@ -23,7 +23,7 @@ public class ContainersController : ODataController
         var top = options.Top?.Value ?? 3;
         var before = options.SkipToken?.RawValue;
 
-        var containers = await _hostManager.GetContainers(environment, before, top, cancellationToken).ToArrayAsync(cancellationToken);
+        var containers = await _hostManager.GetContainerManager(environment).GetContainersAsync(before, top, cancellationToken).ToArrayAsync(cancellationToken);
 
         return new PageResult<ContainerModel>(
             containers,
@@ -33,14 +33,14 @@ public class ContainersController : ODataController
 
     public async Task<ContainerModel?> Get(long environment, [FromRoute] string key,  CancellationToken cancellationToken)
     {
-        var data = await _hostManager.TryGetContainerAsync(environment, key, cancellationToken);
+        var data = await _hostManager.GetContainerManager(environment).TryGetContainerAsync(key, cancellationToken);
         return data;
     }
 
     [HttpGet]
     public async Task<ContainerDetailedModel?> Details(long environment, [FromODataUri] string key, CancellationToken cancellationToken)
     {
-        var data = await _hostManager.TryGetContainerDetails(environment, key, cancellationToken);
+        var data = await _hostManager.GetContainerManager(environment).TryGetContainerDetailsAsync(key, cancellationToken);
         return data;
     }
 
@@ -54,8 +54,8 @@ public class ContainersController : ODataController
         CancellationToken cancellationToken)
     {
         var top = (long?)options.Top?.Value;
-        var data = await _hostManager
-            .GetContainerLogsAsync(environment, key, since, until, top, cancellationToken)
+        var data = await _hostManager.GetContainerManager(environment)
+            .GetContainerLogsAsync(key, since, until, top, cancellationToken)
             .ToArrayAsync(cancellationToken: cancellationToken);
 
         return data;
@@ -68,7 +68,7 @@ public class ContainersController : ODataController
         {
             return BadRequest("'environment' is not provided.");
         }
-        await _hostManager.StopContainerAsync(environment, key, cancellationToken);
+        await _hostManager.GetContainerManager(environment).StopContainerAsync(key, cancellationToken);
         return NoContent();
     }
 
@@ -79,14 +79,14 @@ public class ContainersController : ODataController
         {
             return BadRequest("'environment' is not provided.");
         }
-        await _hostManager.StartContainerAsync(environment, key, cancellationToken);
+        await _hostManager.GetContainerManager(environment).StartContainerAsync(key, cancellationToken);
         return NoContent();
     }
 
     [HttpDelete]
     public async Task<ActionResult> Delete(long environment, [FromRoute] string key, CancellationToken cancellationToken)
     {
-        await _hostManager.DeleteContainerAsync(environment, key, cancellationToken);
+        await _hostManager.GetContainerManager(environment).DeleteContainerAsync(key, cancellationToken);
         return NoContent();
     }
 
@@ -97,7 +97,7 @@ public class ContainersController : ODataController
         {
             return BadRequest("'environment' is not provided.");
         }
-        await _hostManager.RestartContainerAsync(environment, key, cancellationToken);
+        await _hostManager.GetContainerManager(environment).RestartContainerAsync(key, cancellationToken);
         return NoContent();
     }
 
@@ -108,7 +108,33 @@ public class ContainersController : ODataController
         {
             return BadRequest("'environment' is not provided.");
         }
-        await _hostManager.PauseContainerAsync(environment, key, cancellationToken);
+        await _hostManager.GetContainerManager(environment).PauseContainerAsync(key, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost]
+    public async Task<ActionResult> Recreate([FromRoute] string key, ODataActionParameters? parameters, CancellationToken cancellationToken)
+    {
+        if (parameters?.TryGetValue("environment", out var arg) != true || arg is not long {} environment)
+        {
+            return BadRequest("'environment' is not provided.");
+        }
+
+        bool pullImage = false;
+
+        if (parameters?.TryGetValue("pullImage", out var arg2) == true)
+        {
+            if (arg2 is not bool maybePull)
+            {
+                return BadRequest("'pull image' is not provided.");
+            }
+            else
+            {
+                pullImage = maybePull;
+            }
+        }
+
+        await _hostManager.GetContainerManager(environment).RecreateContainerAsync(key, pullImage, cancellationToken);
         return NoContent();
     }
 

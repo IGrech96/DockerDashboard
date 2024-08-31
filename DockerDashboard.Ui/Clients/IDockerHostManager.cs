@@ -4,7 +4,7 @@
 
 //public interface IDockerHostManager
 //{
-//    IAsyncEnumerable<ContainerModel> GetContainers(long environment, CancellationToken cancellationToken);
+//    IAsyncEnumerable<ContainerModel> GetContainersAsync(long environment, CancellationToken cancellationToken);
 
 //    Task<ContainerModel> GetContainerAsync(long environment, string containerId, CancellationToken cancellationToken);
 

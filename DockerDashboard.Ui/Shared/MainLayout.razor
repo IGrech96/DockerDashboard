@@ -6,6 +6,7 @@
 @inject IDockerEnvironmentManager DockerEnvironmentManager
 @inject IPageDetailsNotificationService PageDetailsNotificationService;
 @inject IUserNotificationsConsumer UserNotificationsConsumer;
+@inject NotificationService NotificationService
 
 <PageTitle>Docker Dashboard</PageTitle>
 
@@ -31,7 +32,7 @@
                 {
                     <RadzenPanelMenuItem Text="@environment.Name" Icon="api">
                         <RadzenPanelMenuItem Text="Containers" Path="@($"/containers/{environment.Id}")"></RadzenPanelMenuItem>
-                        <RadzenPanelMenuItem Text="Images"></RadzenPanelMenuItem>
+                        <RadzenPanelMenuItem Text="Images" Path="@($"/images/{environment.Id}")"></RadzenPanelMenuItem>
                         <RadzenPanelMenuItem Text="Volumes"></RadzenPanelMenuItem>
                         <RadzenPanelMenuItem Text="Logs"></RadzenPanelMenuItem>
                         <RadzenPanelMenuItem Text="Host"></RadzenPanelMenuItem>
@@ -75,19 +76,20 @@
         };
         UserNotificationsConsumer.Consumed +=  (level, title, message) =>
         {
-            // await DialogService.OpenAsync<DialogCardPage>(title,
-            //     new Dictionary<string, object>() { { "Message", message }, { "Level", level } },
-            //     new DialogOptions()
-            //     {
-            //         Resizable = true,
-            //         Draggable = true,
-            //         // Resize = OnResize,
-            //         // Drag = OnDrag,
-            //         // Width = Settings != null ? Settings.Width : "700px", 
-            //         // Height = Settings != null ? Settings.Height : "512px",
-            //         // Left = Settings != null ? Settings.Left : null, 
-            //         // Top = Settings != null ? Settings.Top : null
-            //     });
+            var notificationMessage = new NotificationMessage()
+            {
+                Severity = level switch
+                {
+                    LogLevel.Information => NotificationSeverity.Info,
+                    LogLevel.Critical => NotificationSeverity.Error,
+                    LogLevel.Error => NotificationSeverity.Error,
+                    LogLevel.Warning => NotificationSeverity.Warning,
+                    _ => NotificationSeverity.Info
+                },
+                Summary = title,
+                Detail = message,
+            };
+            NotificationService.Notify(notificationMessage);
         };
         _environemnts = await DockerEnvironmentManager.GetAllEnvironmentsAsync(CancellationToken.None).ToArrayAsync();
     }

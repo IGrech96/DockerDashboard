@@ -9,6 +9,7 @@
 @inject IDockerHostManager DockerHostManager
 @inject TooltipService TooltipService
 @inject IJSRuntime JSRuntime
+@inject DialogService DialogService
 
 
 
@@ -40,12 +41,16 @@ else
                     <ChildContent>
                         @if (Container?.Status == ContainerStatus.Running)
                         {
-                            <RadzenSplitButtonItem Text="Pause" Icon="pause" Value="Pause"/>
+                            <RadzenSplitButtonItem Text="Pause" Icon="pause" Value="Pause" />
                         }
                     </ChildContent>
                 </RadzenSplitButton>
                 <RadzenButton Disabled="@(!ToolBarEnabled)" Click="@Delete" Text="@EnsureFullMode("Delete")" Icon="delete" MouseEnter="@(args => ShowTooltip(args,"Delete"))"></RadzenButton>
-                <RadzenButton Disabled="@(!ToolBarEnabled)" Click="@Restart" Text="@EnsureFullMode("Restart")" Icon="restart_alt" MouseEnter="@(args => ShowTooltip(args,"Restart"))"></RadzenButton>
+                <RadzenSplitButton Disabled="@(!ToolBarEnabled)" Click="@Restart" Text="@EnsureFullMode("Restart")" Icon="restart_alt" MouseEnter="@(args => ShowTooltip(args, "Restart"))">
+                    <ChildContent>
+                        <RadzenSplitButtonItem Text="Re-create" Icon="reset_wrench" Value="Recreate" />
+                    </ChildContent>
+                </RadzenSplitButton>
             </RadzenStack>
             @if (CompactMode)
             {
@@ -119,15 +124,6 @@ else
 
     private void ShowTooltip(ElementReference elementReference, string text, TooltipOptions? options = null) => TooltipService.Open(elementReference, text, options);
 
-    // protected override async Task OnParametersSetAsync()
-    // {
-    //     await base.OnParametersSetAsync();
-    //     if (_details != null)
-    //     {
-
-    //         await _details.ReloadAsync();
-    //     }
-    // }
 
     protected override async Task OnInitializedAsync()
     {
@@ -157,20 +153,20 @@ else
             {
                 Container.Status = ContainerStatus.NA;
                 StateHasChanged();
-                await DockerHostManager.PauseContainerAsync(EnvironmentId!.Value, Container.ContainerId, CancellationToken.None);
+                await DockerHostManager.GetContainerManager(EnvironmentId!.Value).PauseContainerAsync(Container.ContainerId, CancellationToken.None);
             }
             else
             {
                 Container.Status = ContainerStatus.NA;
                 StateHasChanged();
-                await DockerHostManager.StopContainerAsync(EnvironmentId!.Value, Container.ContainerId, CancellationToken.None);
+                await DockerHostManager.GetContainerManager(EnvironmentId!.Value).StopContainerAsync(Container.ContainerId, CancellationToken.None);
             }
         }
         else if (Container != null)
         {
             Container.Status = ContainerStatus.NA;
             StateHasChanged();
-            await DockerHostManager.StartContainerAsync(EnvironmentId!.Value, Container.ContainerId, CancellationToken.None);
+            await DockerHostManager.GetContainerManager(EnvironmentId!.Value).StartContainerAsync(Container.ContainerId, CancellationToken.None);
         }
     }
 
@@ -180,17 +176,72 @@ else
         {
             Container.Status = ContainerStatus.NA;
             StateHasChanged();
-            await DockerHostManager.DeleteContainerAsync(EnvironmentId!.Value, Container.ContainerId, CancellationToken.None);
+            await DockerHostManager.GetContainerManager(EnvironmentId!.Value).DeleteContainerAsync(Container.ContainerId, CancellationToken.None);
         }
     }
 
-    private async Task Restart()
+    private enum ReCreateContainerDialogResult
     {
-        if (Container != null)
+        Cancel,
+
+        Recreate,
+
+        RecreateWithNewImage
+    }
+
+    private async Task Restart(RadzenSplitButtonItem? args)
+    {
+        if (Container != null && EnvironmentId != null)
         {
-            Container.Status = ContainerStatus.NA;
-            StateHasChanged();
-            await DockerHostManager.RestartContainerAsync(EnvironmentId!.Value, Container.ContainerId, CancellationToken.None);
+            if (args?.Value is "Recreate")
+            {
+                var result = await ShowDialog();
+
+                if (result is not ReCreateContainerDialogResult.Cancel)
+                {
+                    Container.Status = ContainerStatus.NA;
+                    StateHasChanged();
+
+                    await DockerHostManager.GetContainerManager(EnvironmentId!.Value).RecreateContainerAsync(Container.ContainerId, result == ReCreateContainerDialogResult.RecreateWithNewImage, CancellationToken.None);
+                }
+
+                async Task<ReCreateContainerDialogResult> ShowDialog()
+                {
+                    bool pullImage = false;
+                    var result = await DialogService.OpenAsync("Re-Create container", ds =>
+                        @<RadzenStack Gap="1.5rem">
+                            <p>Recreate <b>@Container?.ShortId @Container?.ContainerName</b>?</p>
+                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                                <RadzenStack Orientation="Orientation.Horizontal">
+                                    <RadzenButton Text="Ok" Click="() => ds.Close(ReCreateContainerDialogResult.Recreate)" Style="width: 80px;"/>
+                                    <RadzenButton Text="Cancel" Click="() => ds.Close(ReCreateContainerDialogResult.Cancel)" ButtonStyle="ButtonStyle.Light"/>
+                                </RadzenStack>
+                                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                                    <RadzenLabel Text="Pull image" Component="True" />
+                                    <RadzenSwitch @bind-Value="pullImage" Name="True" />
+                                </RadzenStack>
+                               
+                            </RadzenStack>
+                        </RadzenStack>);
+
+                    if (result is ReCreateContainerDialogResult enumResult)
+                    {
+                        return enumResult switch
+                        {
+                            ReCreateContainerDialogResult.Recreate when pullImage => ReCreateContainerDialogResult.RecreateWithNewImage,
+                            _ => enumResult
+                        };
+                    }
+
+                    return ReCreateContainerDialogResult.Cancel;
+                }
+            }
+            else
+            {
+                Container.Status = ContainerStatus.NA;
+                StateHasChanged();
+                await DockerHostManager.GetContainerManager(EnvironmentId!.Value).RestartContainerAsync(Container.ContainerId, CancellationToken.None);
+            }
         }
     }
 }

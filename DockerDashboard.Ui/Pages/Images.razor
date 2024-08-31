@@ -1,0 +1,106 @@
+﻿@page "/images/{environmentid:long}"
+@using DockerDashboard.Ui.Components
+@using DockerDashboard.Shared.Hubs
+@using DockerDashboard.Shared.Data
+@using Microsoft.AspNetCore.SignalR.Client
+@using IPageDetailsNotificationService = IPageDetailsNotificationService
+@using Microsoft.AspNetCore.Components.Sections
+@inject IPageDetailsNotificationService PageDetailsNotificationService;
+@inject NavigationManager Navigation;
+
+<style>
+    .rz-grid-table {
+        width: unset;
+    }
+</style>
+
+<SectionContent SectionName="page-toolbar">
+    <RadzenStack Orientation="Orientation.Horizontal">
+        <RadzenLabel Text="Images"></RadzenLabel>
+    </RadzenStack>
+</SectionContent>
+
+<ImagesGrid @ref="_grid" EnvironmentId="EnvironmentId" ContainerOpen="OnContainerOpen"></ImagesGrid>
+
+@if (_containerDetails != null)
+{
+    <ContainerDetailsWrapper @ref="_containerDetailsComponent" EnvironmentId="@EnvironmentId" Container="@_containerDetails" CompactMode="true" Close="OnContainerDetailsClose"></ContainerDetailsWrapper>
+}
+
+@code {
+    // EventConsole console;
+
+    [Parameter]
+    public long EnvironmentId { get; set; }
+
+    private ImagesGrid? _grid;
+    private ContainerDetailsWrapper? _containerDetailsComponent;
+    private ContainerModel? _containerDetails;
+    private HubConnection? _hubConnection;
+    private long? _previousEnvironment;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        _hubConnection = new HubConnectionBuilder()
+            //.AddJsonProtocol(op => op.PayloadSerializerOptions.)
+            .WithUrl(Navigation.ToAbsoluteUri("/containerDetailsHub"))
+            .Build();
+        await _hubConnection.StartAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+        if (_hubConnection != null)
+        {
+            if (_previousEnvironment.HasValue && EnvironmentId != _previousEnvironment)
+            {
+                _hubConnection.Remove(HubRouting.ContainerUpdateMethod(_previousEnvironment.Value));
+                _hubConnection.Remove(HubRouting.ContainerCreateMethod(_previousEnvironment.Value));
+                _hubConnection.Remove(HubRouting.ContainerDestroyMethod(_previousEnvironment.Value));
+                _previousEnvironment = EnvironmentId;
+            }
+
+            _hubConnection.On<UpdateContainerEvent>(HubRouting.ContainerUpdateMethod(EnvironmentId), OnContainerUpdate);
+            _hubConnection.On<CreateContainerEvent>(HubRouting.ContainerCreateMethod(EnvironmentId), OnContainerUpdate);
+            _hubConnection.On<DestroyContainerEvent>(HubRouting.ContainerDestroyMethod(EnvironmentId), OnContainerUpdate);
+            _hubConnection.On<ContainerLogEvent>(HubRouting.ContainerLogMethod(EnvironmentId), OnContainerUpdate);
+
+        }
+    }
+
+    private async Task OnContainerOpen(ContainerModel arg)
+    {
+        _containerDetails = arg;
+        await PageDetailsNotificationService.OpenPageDetailsAsync();
+        StateHasChanged();
+    }
+
+    private async Task OnContainerUpdate(ContainerEvent arg)
+    {
+        if (_grid != null)
+        {
+            await _grid.UpdateContainerAsync(arg);
+        }
+
+        if (_containerDetails?.ContainerId == arg.ContainerId)
+        {
+            if (_containerDetailsComponent != null)
+            {
+                await _containerDetailsComponent.UpdateAsync(arg);
+            }
+        }
+    }
+
+    private async Task OnContainerDetailsClose()
+    {
+        await PageDetailsNotificationService.ClosePageDetailsAsync();
+        _containerDetails = null;
+
+        
+        StateHasChanged();
+    }
+
+}

@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace DockerDashboard {
+namespace DockerDashboard.Host.Demo {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace DockerDashboard {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("DockerDashboard.Demo", typeof(Demo).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("DockerDashboard.Host.Demo.Demo", typeof(Demo).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;

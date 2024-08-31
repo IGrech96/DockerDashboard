@@ -1,20 +1,16 @@
-using System.Text.Json;
-using System.Text.Json.Serialization.Metadata;
+using DockerDashboard.Host.Demo;
+using DockerDashboard.Host.Docker;
 using DockerDashboard.Hubs;
 using DockerDashboard.OData;
 using DockerDashboard.Services.DockerHost;
 using DockerDashboard.Services.Environment;
-using DockerDashboard.Shared.Data;
-using DockerDashboard.Shared.Hubs;
+using DockerDashboard.Shared.Messaging;
 using DockerDashboard.Shared.Services;
 using DockerDashboard.Shared.Services.Environment;
 using Microsoft.AspNetCore.OData;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
-using Microsoft.OData.Edm;
-using Microsoft.OData.ModelBuilder;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
-using JsonSerializer = System.Text.Json.JsonSerializer;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +29,7 @@ builder.Services.AddSingleton<DockerEnvironmentManager>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<DockerEnvironmentManager>());
 builder.Services.AddSingleton<IDockerEnvironmentManager>(sp => sp.GetRequiredService<DockerEnvironmentManager>());
 builder.Services.AddSingleton<IEdmBuilder, DefaultEdmBuilder>();
+builder.Services.AddTransient<IMessageBus, HubContextMessageBus>();
 
 builder.Services.AddSwaggerGen(c =>
     {
@@ -44,6 +41,10 @@ builder.Services
     .AddControllers()
     .AddApplicationPart(typeof(MetadataController).Assembly)
     .AddDockerDashboardOData();
+
+builder.Services
+    .AddLocalEnvironment()
+    .AddDemoEnvironment();
 
 var app = builder.Build();
 
