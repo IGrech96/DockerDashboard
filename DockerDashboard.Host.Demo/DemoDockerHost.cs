@@ -7,13 +7,14 @@ using DockerDashboard.Shared.Services;
 
 namespace DockerDashboard.Host.Demo;
 
-internal class DemoDockerHost : IDockerHost, IDockerHostContainerManager
+internal class DemoDockerHost : IDockerHost, IDockerHostContainerManager, IDockerHostImageManager
 {
     private readonly IMessageBus _hubContex;
     private readonly DockerEnvironment _environment;
     private readonly List<ContainerDetailedModel> _containers;
 
     public IDockerHostContainerManager ContainersHost => this;
+    public IDockerHostImageManager ImagesHost => this;
 
     public DemoDockerHost(IMessageBus hubContex, DockerEnvironment environment)
     {
@@ -122,6 +123,11 @@ internal class DemoDockerHost : IDockerHost, IDockerHostContainerManager
         }
     }
 
+    public IAsyncEnumerable<ImageModel> GetImagesAsync(CancellationToken cancellationToken)
+    {
+        return AsyncEnumerable.Empty<ImageModel>();
+    }
+
     private ContainerDetailedModel[] GenerateContainers()
     {
         var options = new JsonSerializerOptions()
@@ -135,4 +141,6 @@ internal class DemoDockerHost : IDockerHost, IDockerHostContainerManager
     {
         public ContainerDetailedModel[] value { get; set; } = [];
     }
+
+    
 }

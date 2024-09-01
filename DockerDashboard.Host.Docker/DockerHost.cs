@@ -18,6 +18,7 @@ internal class DockerHost : IDockerHost
     private CancellationTokenSource? _watchContainerEventsTokenSource;
 
     public IDockerHostContainerManager ContainersHost { get; }
+    public IDockerHostImageManager ImagesHost { get; }
 
     public DockerHost(IMessageBus containerDetailsHub, DockerEnvironment environment)
     {
@@ -26,6 +27,7 @@ internal class DockerHost : IDockerHost
         _environment = environment;
 
         ContainersHost = new DockerContainersHost(_client, _containerDetailsHub, _environment);
+        ImagesHost = new DockerImagesHost(_client, containerDetailsHub, environment);
     }
 
     public Task StartWatchingAsync(CancellationToken cancellationToken)

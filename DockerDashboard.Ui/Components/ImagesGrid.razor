@@ -11,67 +11,59 @@
     <Columns>
         <RadzenDataGridColumn Title="Name">
             <Template Context="data">
-                <button class="button-link" onclick="@(() => OpenContainer(data))">@data.ContainerName.TrimStart('/')</button>
+                <button class="button-link" onclick="@(() => OpenImage(data))">@data.ImageName</button>
                 <RadzenStack Orientation="Orientation.Horizontal">
                     <RadzenText TextStyle="TextStyle.Caption">@data.ShortId</RadzenText>
                     @* <RadzenIcon Icon="content_copy" style="font-size=1em; width=5px; font-weight=100"></RadzenIcon> *@
                 </RadzenStack>
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn Title="Image">
+        <RadzenDataGridColumn Title="Tag">
             <Template Context="data">
-                <a href="">@data.ImageName</a>
+                 @data.ImageTag
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn Property="Status" Title="Status">
             <Template Context="data">
-                @if (data.Status is ContainerStatus.NA )
+                @if (data.Countainers > 0 )
                 {
-                    <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" />                        
+                    <a href="">In Use</a>                      
                 }
                 else
                 {
-                    @data.Status.ToString()
+                    <p>Unused</p>
                 }
-            </Template>
-        </RadzenDataGridColumn>
-        <RadzenDataGridColumn Title="Port(s)">
-            <Template Context="data">
-                <RadzenStack Wrap="FlexWrap.Wrap" Gap="0">
-                    @foreach (var (localPort, containerPort) in data.Ports)
-                    {
-                        <a href="">@localPort:@containerPort</a>
-                    }
-                </RadzenStack>
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn Property="Created" Title="Created">
         </RadzenDataGridColumn>
+        <RadzenDataGridColumn Property="Size" Title="Size">
+        </RadzenDataGridColumn>
         <RadzenDataGridColumn Title="Actions" Filterable="false" Sortable="false" Frozen="true" >
             <Template Context="data">
-                <RadzenButton Disabled="@(!ToolbarEnabled(data))" Click="@(() => StartStop(data))"  Icon="@ChooseMenuText(data, "play_arrow", "stop")" ButtonStyle="ButtonStyle.Light"></RadzenButton>
-                <RadzenButton Disabled="@(!ToolbarEnabled(data))" Click="@(args => OpenMenu(args, data))" Icon="more_vert" ButtonStyle="ButtonStyle.Light"></RadzenButton>
-                <RadzenButton Disabled="@(!ToolbarEnabled(data))" Click="@(() => Delete(data))" Icon="delete" ButtonStyle="ButtonStyle.Light"></RadzenButton>
+                <RadzenButton Click="@(() => RunContainer(data))" Icon="play_arrow" ButtonStyle="ButtonStyle.Light"></RadzenButton>
+                <RadzenButton Click="@(args => OpenMenu(args, data))" Icon="more_vert" ButtonStyle="ButtonStyle.Light"></RadzenButton>
+                <RadzenButton Click="@(() => Delete(data))" Icon="delete" ButtonStyle="ButtonStyle.Light"></RadzenButton>
             </Template>
         </RadzenDataGridColumn>
     </Columns>
 </RadzenDataGrid>
 
 @code {
-    private RadzenDataGrid<ContainerModel>? _grid;
-    private List<ContainerModel>? _orderedContainers;
+    private RadzenDataGrid<ImageModel>? _grid;
+    private List<ImageModel>? _orderedContainers;
 
     [Parameter]
     public long? EnvironmentId { get; set; }
 
     [Parameter]
-    public Func<ContainerModel, Task>? ContainerOpen { get; set; }
+    public Func<ImageModel, Task>? ImageOpen { get; set; }
 
-    private async Task OpenContainer(ContainerModel model)
+    private async Task OpenImage(ImageModel model)
     {
-        if (ContainerOpen != null)
+        if (ImageOpen != null)
         {
-            await ContainerOpen(model);
+            await ImageOpen(model);
         }
     }
 
@@ -91,41 +83,42 @@
         await RefreshDataAsync();
     }
 
-    public async Task UpdateContainerAsync(ContainerEvent @event)
+    public Task UpdateContainerAsync(ContainerEvent @event)
     {
-        // //TODO: concurrency
-        if (@event is UpdateContainerEvent update)
-        {
-            var row = _orderedContainers?.FirstOrDefault(m => m.ContainerId == update.ContainerId);
-            if (row != null)
-            {
-                row.Populate(update.Container);
-                await InvokeAsync(async () =>
-                {
-                    await ReloadGridAsync();
-                });
-            }
-        }
-        else if (@event is CreateContainerEvent create)
-        {
-            _orderedContainers?.Add(create.Container);
-            await InvokeAsync(async () =>
-            {
-                await ReloadGridAsync();
-            });
-        }
-        else if (@event is DestroyContainerEvent destroy)
-        {
-            var index = _orderedContainers?.FindIndex(m => m.ContainerId == destroy.ContainerId);
-            if (index >= 0)
-            {
-                _orderedContainers?.RemoveAt(index.Value);
-                await InvokeAsync(async () =>
-                {
-                    await ReloadGridAsync();
-                });
-            }
-        }
+        return Task.CompletedTask;
+        // // //TODO: concurrency
+        // if (@event is UpdateContainerEvent update)
+        // {
+        //     var row = _orderedContainers?.FirstOrDefault(m => m.ContainerId == update.ContainerId);
+        //     if (row != null)
+        //     {
+        //         row.Populate(update.Container);
+        //         await InvokeAsync(async () =>
+        //         {
+        //             await ReloadGridAsync();
+        //         });
+        //     }
+        // }
+        // else if (@event is CreateContainerEvent create)
+        // {
+        //     _orderedContainers?.Add(create.Container);
+        //     await InvokeAsync(async () =>
+        //     {
+        //         await ReloadGridAsync();
+        //     });
+        // }
+        // else if (@event is DestroyContainerEvent destroy)
+        // {
+        //     var index = _orderedContainers?.FindIndex(m => m.ContainerId == destroy.ContainerId);
+        //     if (index >= 0)
+        //     {
+        //         _orderedContainers?.RemoveAt(index.Value);
+        //         await InvokeAsync(async () =>
+        //         {
+        //             await ReloadGridAsync();
+        //         });
+        //     }
+        // }
     }
 
     public async Task RefreshDataAsync()
@@ -137,29 +130,20 @@
 
             StateHasChanged();
 
-            _orderedContainers = await DockerHostManager.GetContainerManager(EnvironmentId.Value).GetContainersAsync(null, null, CancellationToken.None).ToListAsync();
+            _orderedContainers = await DockerHostManager.GetImageManager(EnvironmentId.Value).GetImagesAsync(CancellationToken.None).ToListAsync();
             await ReloadGridAsync();
 
             StateHasChanged();
         }
     }
 
-    private string ChooseMenuText(ContainerModel container, string activate, string diactivate)
-    {
-        if (container?.Status == ContainerStatus.Running)
-        {
-            return diactivate;
-        }
-        return activate;
-    }
-
-    private Task OpenMenu(MouseEventArgs args, ContainerModel data)
+    private Task OpenMenu(MouseEventArgs args, ImageModel data)
     {
         var menu = new List<ContextMenuItem>();
-        if (data.Status == ContainerStatus.Running)
-        {
-            menu.Add(new ContextMenuItem() { Text = "Pause", Value = "Pause", Icon = "pause" });
-        }
+        // if (data.Status == ContainerStatus.Running)
+        // {
+        //     menu.Add(new ContextMenuItem() { Text = "Pause", Value = "Pause", Icon = "pause" });
+        // }
 
 
         ContextMenuService.Open(args, menu,
@@ -172,32 +156,31 @@
         return Task.CompletedTask;
     }
 
-    private async Task StartStop(ContainerModel data)
+    private Task RunContainer(ImageModel data)
     {
-        if (data.Status == ContainerStatus.Running)
-        {
-            data.Status = ContainerStatus.NA;
-            StateHasChanged();
-            await DockerHostManager.GetContainerManager(EnvironmentId!.Value).StopContainerAsync(data.ContainerId, CancellationToken.None);
-        }
-        else
-        {
-            data.Status = ContainerStatus.NA;
-            StateHasChanged();
-            await DockerHostManager.GetContainerManager(EnvironmentId!.Value).StartContainerAsync(data.ContainerId, CancellationToken.None);
-        }
+        //TODO:
+        return Task.CompletedTask;
+        // if (data.Status == ContainerStatus.Running)
+        // {
+        //     data.Status = ContainerStatus.NA;
+        //     StateHasChanged();
+        //     await DockerHostManager.GetContainerManager(EnvironmentId!.Value).StopContainerAsync(data.ContainerId, CancellationToken.None);
+        // }
+        // else
+        // {
+        //     data.Status = ContainerStatus.NA;
+        //     StateHasChanged();
+        //     await DockerHostManager.GetContainerManager(EnvironmentId!.Value).StartContainerAsync(data.ContainerId, CancellationToken.None);
+        // }
     }
 
-    private async Task Delete(ContainerModel data)
+    private Task Delete(ImageModel data)
     {
-        data.Status = ContainerStatus.NA;
-        StateHasChanged();
-        await DockerHostManager.GetContainerManager(EnvironmentId!.Value).DeleteContainerAsync(data.ContainerId, CancellationToken.None);
-    }
-
-    private bool ToolbarEnabled(ContainerModel data)
-    {
-        return data.Status != ContainerStatus.NA;
+        //TODO:
+        return Task.CompletedTask;
+        // data.Status = ContainerStatus.NA;
+        // StateHasChanged();
+        // await DockerHostManager.GetContainerManager(EnvironmentId!.Value).DeleteContainerAsync(data.ContainerId, CancellationToken.None);
     }
 
     private async Task ReloadGridAsync()

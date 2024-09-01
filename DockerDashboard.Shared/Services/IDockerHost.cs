@@ -9,4 +9,6 @@ public interface IDockerHost
     Task StopWatchingAsync(CancellationToken cancellationToken);
 
     IDockerHostContainerManager ContainersHost { get; }
+
+    IDockerHostImageManager ImagesHost { get; }
 }

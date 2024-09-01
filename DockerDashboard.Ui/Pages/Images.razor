@@ -20,11 +20,11 @@
     </RadzenStack>
 </SectionContent>
 
-<ImagesGrid @ref="_grid" EnvironmentId="EnvironmentId" ContainerOpen="OnContainerOpen"></ImagesGrid>
+<ImagesGrid @ref="_grid" EnvironmentId="EnvironmentId" ImageOpen="OnImageOpen"></ImagesGrid>
 
 @if (_containerDetails != null)
 {
-    <ContainerDetailsWrapper @ref="_containerDetailsComponent" EnvironmentId="@EnvironmentId" Container="@_containerDetails" CompactMode="true" Close="OnContainerDetailsClose"></ContainerDetailsWrapper>
+    @* <ContainerDetailsWrapper @ref="_containerDetailsComponent" EnvironmentId="@EnvironmentId" Container="@_containerDetails" CompactMode="true" Close="OnContainerDetailsClose"></ContainerDetailsWrapper> *@
 }
 
 @code {
@@ -34,10 +34,10 @@
     public long EnvironmentId { get; set; }
 
     private ImagesGrid? _grid;
-    private ContainerDetailsWrapper? _containerDetailsComponent;
-    private ContainerModel? _containerDetails;
+    //private ContainerDetailsWrapper? _containerDetailsComponent;
+    private ImageModel? _containerDetails;
     private HubConnection? _hubConnection;
-    private long? _previousEnvironment;
+    //private long? _previousEnvironment;
 
     protected override async Task OnInitializedAsync()
     {
@@ -53,25 +53,25 @@
     protected override async Task OnParametersSetAsync()
     {
         await base.OnParametersSetAsync();
-        if (_hubConnection != null)
-        {
-            if (_previousEnvironment.HasValue && EnvironmentId != _previousEnvironment)
-            {
-                _hubConnection.Remove(HubRouting.ContainerUpdateMethod(_previousEnvironment.Value));
-                _hubConnection.Remove(HubRouting.ContainerCreateMethod(_previousEnvironment.Value));
-                _hubConnection.Remove(HubRouting.ContainerDestroyMethod(_previousEnvironment.Value));
-                _previousEnvironment = EnvironmentId;
-            }
+        // if (_hubConnection != null)
+        // {
+        //     if (_previousEnvironment.HasValue && EnvironmentId != _previousEnvironment)
+        //     {
+        //         _hubConnection.Remove(HubRouting.ContainerUpdateMethod(_previousEnvironment.Value));
+        //         _hubConnection.Remove(HubRouting.ContainerCreateMethod(_previousEnvironment.Value));
+        //         _hubConnection.Remove(HubRouting.ContainerDestroyMethod(_previousEnvironment.Value));
+        //         _previousEnvironment = EnvironmentId;
+        //     }
 
-            _hubConnection.On<UpdateContainerEvent>(HubRouting.ContainerUpdateMethod(EnvironmentId), OnContainerUpdate);
-            _hubConnection.On<CreateContainerEvent>(HubRouting.ContainerCreateMethod(EnvironmentId), OnContainerUpdate);
-            _hubConnection.On<DestroyContainerEvent>(HubRouting.ContainerDestroyMethod(EnvironmentId), OnContainerUpdate);
-            _hubConnection.On<ContainerLogEvent>(HubRouting.ContainerLogMethod(EnvironmentId), OnContainerUpdate);
+        //     _hubConnection.On<UpdateContainerEvent>(HubRouting.ContainerUpdateMethod(EnvironmentId), OnContainerUpdate);
+        //     _hubConnection.On<CreateContainerEvent>(HubRouting.ContainerCreateMethod(EnvironmentId), OnContainerUpdate);
+        //     _hubConnection.On<DestroyContainerEvent>(HubRouting.ContainerDestroyMethod(EnvironmentId), OnContainerUpdate);
+        //     _hubConnection.On<ContainerLogEvent>(HubRouting.ContainerLogMethod(EnvironmentId), OnContainerUpdate);
 
-        }
+        // }
     }
 
-    private async Task OnContainerOpen(ContainerModel arg)
+    private async Task OnImageOpen(ImageModel arg)
     {
         _containerDetails = arg;
         await PageDetailsNotificationService.OpenPageDetailsAsync();
@@ -85,13 +85,13 @@
             await _grid.UpdateContainerAsync(arg);
         }
 
-        if (_containerDetails?.ContainerId == arg.ContainerId)
-        {
-            if (_containerDetailsComponent != null)
-            {
-                await _containerDetailsComponent.UpdateAsync(arg);
-            }
-        }
+        // if (_containerDetails?.ContainerId == arg.ContainerId)
+        // {
+        //     if (_containerDetailsComponent != null)
+        //     {
+        //         await _containerDetailsComponent.UpdateAsync(arg);
+        //     }
+        // }
     }
 
     private async Task OnContainerDetailsClose()

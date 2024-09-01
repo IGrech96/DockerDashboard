@@ -15,6 +15,11 @@ public class DockerHostManager : IDockerHostManager
         return new DockerHostContainerManager(environment, _client, _logger);
     }
 
+    public IDockerHostImageManager GetImageManager(long environment)
+    {
+        return new DockerHostImageManager(environment, _client, _logger);
+    }
+
     public DockerHostManager(
         [FromKeyedServices(ClientCategory.Backend)]
         ODataClient client,

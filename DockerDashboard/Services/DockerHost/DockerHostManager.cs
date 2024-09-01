@@ -14,6 +14,12 @@ public class DockerHostManager : IDockerHostManager
         return host.ContainersHost;
     }
 
+    public IDockerHostImageManager GetImageManager(long environment)
+    {
+        var host = _dockerEnvironmentManager.GetHost(environment);
+        return host.ImagesHost;
+    }
+
     public DockerHostManager(DockerEnvironmentManager dockerEnvironmentManager)
     {
         _dockerEnvironmentManager = dockerEnvironmentManager;

@@ -92,4 +92,22 @@ internal static class DataModelExtensions
             Ports = response.Ports.Select(p => new ContainerPort(p.PublicPort, p.PrivatePort)).ToArray(), //todo
         };
     }
+
+    public static IEnumerable<ImageModel> ToImages(this ImagesListResponse response)
+    {
+        foreach (var responseRepoTag in response.RepoTags)
+        {
+            var tokens = responseRepoTag.Split(":");
+            var (name, tag) = (tokens.First(), tokens.LastOrDefault());
+            yield return new ImageModel()
+            {
+                ImageId = response.ID,
+                Created = response.Created,
+                ImageName = name,
+                ImageTag = tag,
+                Size = response.Size,
+                Countainers = response.Containers
+            };
+        }
+    }
 }

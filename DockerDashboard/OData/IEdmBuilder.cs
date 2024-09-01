@@ -14,6 +14,16 @@ public class DefaultEdmBuilder : IEdmBuilder
     public IEdmModel GetEdmModel()
     {
         ODataConventionModelBuilder builder = new();
+        BuildContainers(builder);
+
+
+        builder.EntitySet<ImageModel>("Images");
+
+        return builder.GetEdmModel();
+    }
+
+    private static void BuildContainers(ODataConventionModelBuilder builder)
+    {
         builder.EntitySet<ContainerModel>("Containers");
         builder.EntitySet<DockerEnvironment>("DockerEnvironments");
         builder.EntitySet<ContainerDetailedModel>("Details").EntityType.HasKey(k => k.ContainerId);
@@ -37,7 +47,5 @@ public class DefaultEdmBuilder : IEdmBuilder
         logsFunction.Parameter<DateTimeOffset?>("until").Optional();
         logsFunction.Parameter<DateTimeOffset?>("since").Optional();
         logsFunction.ReturnsFromEntitySet<ContainerLog>("Logs");
-
-        return builder.GetEdmModel();
     }
 }
