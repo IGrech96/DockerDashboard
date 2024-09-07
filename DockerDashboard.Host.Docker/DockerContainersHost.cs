@@ -13,12 +13,18 @@ internal class DockerContainersHost : IDockerHostContainerManager
 {
     private readonly IDockerClient _client;
     private readonly IMessageBus _containerDetailsHub;
+    private readonly IDockerHostImageManager _imageManager;
     private readonly DockerEnvironment _environment;
 
-    public DockerContainersHost(IDockerClient client, IMessageBus containerDetailsHub, DockerEnvironment environment)
+    public DockerContainersHost(
+        IDockerClient client,
+        IMessageBus containerDetailsHub,
+        IDockerHostImageManager imageManager,
+        DockerEnvironment environment)
     {
         _client = client;
         _containerDetailsHub = containerDetailsHub;
+        _imageManager = imageManager;
         _environment = environment;
     }
 
@@ -176,7 +182,7 @@ internal class DockerContainersHost : IDockerHostContainerManager
         await _client.Containers.RestartContainerAsync(containerId, new(), cancellationToken);
     }
 
-    public async Task RecreateContainerAsync(string containerId, bool pullImage, CancellationToken cancellationToken)
+    public async Task RecreateContainerAsync(string containerId, bool pullImage, IProgress<ProgressEvent> progress, CancellationToken cancellationToken)
     {
         var data = await _client.Containers.InspectContainerAsync(containerId, cancellationToken);
         if (data == null)
@@ -185,23 +191,13 @@ internal class DockerContainersHost : IDockerHostContainerManager
             return;
         }
 
-        await DeleteContainerAsync(containerId, cancellationToken);
-
         if (pullImage)
         {
-            //TODO: move to separate method
-            //TODO: authentication
-            //TODO: repo
-            var imageParamters = new ImagesCreateParameters()
-            {
-                FromImage = data.Config.Image,
-                Tag = null
-            };
-            var authConfig = new AuthConfig() { };
-            var progress = new Progress<JSONMessage>();
-            await _client.Images.CreateImageAsync(imageParamters, authConfig, progress, cancellationToken);
+           await _imageManager.
+               PullImageAsync(data.Image, progress, cancellationToken);
         }
 
+        await DeleteContainerAsync(containerId, cancellationToken);
         await _client.Containers.CreateContainerAsync(new CreateContainerParameters(data.Config),cancellationToken);
     }
 }

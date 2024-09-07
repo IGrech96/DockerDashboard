@@ -14,14 +14,13 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{662F5505-6627-4F06-9800-1FD7F97302C0}"
 	ProjectSection(SolutionItems) = preProject
 		Directory.Build.props = Directory.Build.props
-		Roadmap.md = Roadmap.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{2B7E05C3-A7DD-48F1-8FA5-465B6D830057}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DockerDashboard.Host.Docker", "DockerDashboard.Host.Docker\DockerDashboard.Host.Docker.csproj", "{86F0E09C-C9DA-4E3A-AAFE-8DF62EF6EA18}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DockerDashboard.Host.Docker", "DockerDashboard.Host.Docker\DockerDashboard.Host.Docker.csproj", "{86F0E09C-C9DA-4E3A-AAFE-8DF62EF6EA18}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DockerDashboard.Host.Demo", "DockerDashboard.Host.Demo\DockerDashboard.Host.Demo.csproj", "{8D6C6DCD-5375-43A6-A3AE-B6550A23A543}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DockerDashboard.Host.Demo", "DockerDashboard.Host.Demo\DockerDashboard.Host.Demo.csproj", "{8D6C6DCD-5375-43A6-A3AE-B6550A23A543}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

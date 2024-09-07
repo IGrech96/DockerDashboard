@@ -97,8 +97,7 @@ internal static class DataModelExtensions
     {
         foreach (var responseRepoTag in response.RepoTags)
         {
-            var tokens = responseRepoTag.Split(":");
-            var (name, tag) = (tokens.First(), tokens.LastOrDefault());
+            var (name, tag) = ParseImage(responseRepoTag);   
             yield return new ImageModel()
             {
                 ImageId = response.ID,
@@ -109,5 +108,13 @@ internal static class DataModelExtensions
                 Countainers = response.Containers
             };
         }
+    }
+
+    public static (string imageName, string imageTag) ParseImage(string image)
+    {
+        var tokens = image.Split(":");
+        var (name, tag) = (tokens.First(), tokens.LastOrDefault());
+
+        return (name, tag ?? string.Empty);
     }
 }

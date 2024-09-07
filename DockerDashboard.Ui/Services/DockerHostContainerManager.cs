@@ -1,5 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using DockerDashboard.Shared.Data;
+using DockerDashboard.Shared.Hubs;
 using DockerDashboard.Shared.Services;
 using DockerDashboard.Ui.Clients;
 using Simple.OData.Client;
@@ -160,7 +161,7 @@ public class DockerHostContainerManager : IDockerHostContainerManager
         }
     }
 
-    public async Task RecreateContainerAsync(string containerId, bool pullImage, CancellationToken cancellationToken)
+    public async Task RecreateContainerAsync(string containerId, bool pullImage, IProgress<ProgressEvent> progress, CancellationToken cancellationToken)
     {
         try
         {

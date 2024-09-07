@@ -202,7 +202,9 @@ else
                     Container.Status = ContainerStatus.NA;
                     StateHasChanged();
 
-                    await DockerHostManager.GetContainerManager(EnvironmentId!.Value).RecreateContainerAsync(Container.ContainerId, result == ReCreateContainerDialogResult.RecreateWithNewImage, CancellationToken.None);
+                    //TODO: dialog box with progress
+                    var progress = new Progress<ProgressEvent>();
+                    await DockerHostManager.GetContainerManager(EnvironmentId!.Value).RecreateContainerAsync(Container.ContainerId, result == ReCreateContainerDialogResult.RecreateWithNewImage, progress, CancellationToken.None);
                 }
 
                 async Task<ReCreateContainerDialogResult> ShowDialog()

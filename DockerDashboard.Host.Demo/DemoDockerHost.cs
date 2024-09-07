@@ -111,7 +111,7 @@ internal class DemoDockerHost : IDockerHost, IDockerHostContainerManager, IDocke
 
     
 
-    public async Task RecreateContainerAsync(string containerId, bool pullImage, CancellationToken cancellationToken)
+    public async Task RecreateContainerAsync(string containerId, bool pullImage, IProgress<ProgressEvent> progress, CancellationToken cancellationToken)
     {
         if (await TryGetContainerAsync(containerId, cancellationToken) is { } container)
         {
@@ -126,6 +126,11 @@ internal class DemoDockerHost : IDockerHost, IDockerHostContainerManager, IDocke
     public IAsyncEnumerable<ImageModel> GetImagesAsync(CancellationToken cancellationToken)
     {
         return AsyncEnumerable.Empty<ImageModel>();
+    }
+
+    public Task PullImageAsync(string image, IProgress<ProgressEvent> progress, CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
     }
 
     private ContainerDetailedModel[] GenerateContainers()

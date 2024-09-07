@@ -4,6 +4,7 @@ using DockerDashboard.Hubs;
 using DockerDashboard.OData;
 using DockerDashboard.Services.DockerHost;
 using DockerDashboard.Services.Environment;
+using DockerDashboard.Services.Registry;
 using DockerDashboard.Shared.Messaging;
 using DockerDashboard.Shared.Services;
 using DockerDashboard.Shared.Services.Environment;
@@ -30,6 +31,9 @@ builder.Services.AddHostedService(sp => sp.GetRequiredService<DockerEnvironmentM
 builder.Services.AddSingleton<IDockerEnvironmentManager>(sp => sp.GetRequiredService<DockerEnvironmentManager>());
 builder.Services.AddSingleton<IEdmBuilder, DefaultEdmBuilder>();
 builder.Services.AddTransient<IMessageBus, HubContextMessageBus>();
+builder.Services.AddSingleton<IDockerRegistryManager, DockerRegistryManager>();
+
+builder.Services.Configure<DockerRegistryOptions>(builder.Configuration.GetSection(nameof(DockerRegistryOptions)));
 
 builder.Services.AddSwaggerGen(c =>
     {
@@ -90,4 +94,10 @@ app.MapHub<ContainerDetailsHub>("/containerDetailsHub");
 
 app.MapControllers();
 
+
+//var mng = app.Services.GetRequiredService<DockerEnvironmentManager>();
+//await mng.StartAsync(CancellationToken.None);
+//var svc = app.Services.GetRequiredService<IDockerHostManager>();
+
+//await svc.GetImageManager(1).PullImageAsync("ivang2896044/receiptstorage:latest", CancellationToken.None);
 app.Run();

@@ -1,7 +1,9 @@
 ﻿using System.Runtime.CompilerServices;
 using Docker.DotNet;
 using Docker.DotNet.Models;
+using DockerDashboard.Host.Docker.Progress;
 using DockerDashboard.Shared.Data;
+using DockerDashboard.Shared.Hubs;
 using DockerDashboard.Shared.Messaging;
 using DockerDashboard.Shared.Services;
 
@@ -11,12 +13,18 @@ public class DockerImagesHost : IDockerHostImageManager
 {
     private readonly IDockerClient _client;
     private readonly IMessageBus _containerDetailsHub;
+    private readonly IDockerRegistryManager _registryManager;
     private readonly DockerEnvironment _environment;
 
-    public DockerImagesHost(IDockerClient client, IMessageBus containerDetailsHub, DockerEnvironment environment)
+    public DockerImagesHost(
+        IDockerClient client,
+        IMessageBus containerDetailsHub,
+        IDockerRegistryManager registryManager,
+        DockerEnvironment environment)
     {
         _client = client;
         _containerDetailsHub = containerDetailsHub;
+        _registryManager = registryManager;
         _environment = environment;
     }
 
@@ -34,5 +42,28 @@ public class DockerImagesHost : IDockerHostImageManager
                 yield return imageModel;
             }
         }
+    }
+
+    public async Task PullImageAsync(string image, IProgress<ProgressEvent> progress, CancellationToken cancellationToken)
+    {
+        var (imageName, tag) = DataModelExtensions.ParseImage(image);
+        var imageParamters = new ImagesCreateParameters()
+        {
+            FromImage = imageName,
+            Tag = tag
+        };
+        var authConfig = new AuthConfig();
+        if (await _registryManager.TryGetRegistryAsync(imageName, cancellationToken) is { } registry &&
+            await _registryManager.TryGetCredentailsAsync(registry, cancellationToken) is { } credentails)
+
+        {
+            authConfig.Username = credentails.username;
+            authConfig.Password = credentails.password;
+        }
+
+        var progressAdapter = new JsonMessageProgressAdapter(progress);
+
+        await _client.Images.CreateImageAsync(imageParamters, authConfig, progressAdapter, cancellationToken);
+
     }
 }

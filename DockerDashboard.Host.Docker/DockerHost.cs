@@ -20,14 +20,17 @@ internal class DockerHost : IDockerHost
     public IDockerHostContainerManager ContainersHost { get; }
     public IDockerHostImageManager ImagesHost { get; }
 
-    public DockerHost(IMessageBus containerDetailsHub, DockerEnvironment environment)
+    public DockerHost(
+        IMessageBus containerDetailsHub,
+        IDockerRegistryManager registryManager,
+        DockerEnvironment environment)
     {
         _client = new DockerClientConfiguration().CreateClient();
         _containerDetailsHub = containerDetailsHub;
         _environment = environment;
 
-        ContainersHost = new DockerContainersHost(_client, _containerDetailsHub, _environment);
-        ImagesHost = new DockerImagesHost(_client, containerDetailsHub, environment);
+        ImagesHost = new DockerImagesHost(_client, containerDetailsHub, registryManager, environment);
+        ContainersHost = new DockerContainersHost(_client, _containerDetailsHub, ImagesHost, _environment);
     }
 
     public Task StartWatchingAsync(CancellationToken cancellationToken)

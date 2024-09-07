@@ -14,7 +14,10 @@ public static class ServiceCollectionExtensions
 
         IDockerHost CreateHostFactory(IServiceProvider serviceprovider, DockerEnvironment dockerenvironment)
         {
-            return new DockerHost(serviceprovider.GetRequiredService<IMessageBus>(), dockerenvironment);
+            return new DockerHost(
+                serviceprovider.GetRequiredService<IMessageBus>(),
+                serviceprovider.GetRequiredService<IDockerRegistryManager>(),
+                dockerenvironment);
         }
     }
 }

@@ -1,13 +1,18 @@
 ﻿@using DockerDashboard.Shared.Data
 @using DockerDashboard.Shared.Hubs
 @using DockerDashboard.Shared.Services
+@using DockerDashboard.Ui.Services
 @inject IDockerHostManager DockerHostManager
 @inject NavigationManager Navigation
 @inject ContextMenuService ContextMenuService
+@inject Radzen.DialogService DialogService
 
 <RadzenDataGrid @ref=_grid Data="@_orderedContainers" AllowVirtualization="true" Style="overflow:auto;"
                 AllowFiltering="true" FilterPopupRenderMode="PopupRenderMode.OnDemand" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" LogicalFilterOperator="LogicalFilterOperator.Or"
                 AllowSorting="true">
+    <HeaderTemplate>
+        <RadzenButton Icon="download" Text="Pull" Click="PullNewImage"  />
+    </HeaderTemplate>
     <Columns>
         <RadzenDataGridColumn Title="Name">
             <Template Context="data">
@@ -20,14 +25,14 @@
         </RadzenDataGridColumn>
         <RadzenDataGridColumn Title="Tag">
             <Template Context="data">
-                 @data.ImageTag
+                @data.ImageTag
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn Property="Status" Title="Status">
             <Template Context="data">
-                @if (data.Countainers > 0 )
+                @if (data.Countainers > 0)
                 {
-                    <a href="">In Use</a>                      
+                    <a href="">In Use</a>
                 }
                 else
                 {
@@ -39,7 +44,7 @@
         </RadzenDataGridColumn>
         <RadzenDataGridColumn Property="Size" Title="Size">
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn Title="Actions" Filterable="false" Sortable="false" Frozen="true" >
+        <RadzenDataGridColumn Title="Actions" Filterable="false" Sortable="false" Frozen="true">
             <Template Context="data">
                 <RadzenButton Click="@(() => RunContainer(data))" Icon="play_arrow" ButtonStyle="ButtonStyle.Light"></RadzenButton>
                 <RadzenButton Click="@(args => OpenMenu(args, data))" Icon="more_vert" ButtonStyle="ButtonStyle.Light"></RadzenButton>
@@ -140,20 +145,28 @@
     private Task OpenMenu(MouseEventArgs args, ImageModel data)
     {
         var menu = new List<ContextMenuItem>();
-        // if (data.Status == ContainerStatus.Running)
-        // {
-        //     menu.Add(new ContextMenuItem() { Text = "Pause", Value = "Pause", Icon = "pause" });
-        // }
 
+        menu.Add(new ContextMenuItem() {Text = "Pull", Value = "Pull", Icon = "download"});
 
-        ContextMenuService.Open(args, menu,
-            (e) =>
-            {
-                //console.Log($"Menu item with Value={e.Value} clicked. Tree item: {args.Text}, EmployeeID: {((Employee)args.Value).EmployeeID}");
-            }
-        );
+        ContextMenuService.Open(args, menu, ImageMenuClick);
 
         return Task.CompletedTask;
+
+        async void ImageMenuClick(MenuItemEventArgs e)
+        {
+            if (e.Value is "Pull")
+            {        
+                if (EnvironmentId.HasValue)
+                {
+                    var fullImageName = $"{data.ImageName}:{data.ImageTag}";
+                    await DialogService.OpenProgressDialogAsync(
+                        $"Pulling {fullImageName}...",
+                        async (progress, token) => await DockerHostManager
+                            .GetImageManager(EnvironmentId.Value)
+                            .PullImageAsync($"{data.ImageName}:{data.ImageTag}", progress, token));
+                }
+            }
+        }
     }
 
     private Task RunContainer(ImageModel data)
@@ -188,6 +201,30 @@
         if (_grid != null)
         {
             await _grid.Reload();
+        }
+    }
+
+    private async Task PullNewImage(MouseEventArgs obj)
+    {
+        string image = string.Empty;
+        var result = await DialogService.OpenAsync("Pull new image", ds =>
+            @<RadzenStack Gap="1.5rem">
+        <RadzenTextBox @bind-Value="image" Change="args => StateHasChanged()"></RadzenTextBox>
+                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                    <RadzenStack Orientation="Orientation.Horizontal">
+                        <RadzenButton Text="Pull" Click="() => ds.Close(true)" Style="width: 80px;"/>
+                        <RadzenButton Text="Cancel" Click="() => ds.Close(false)" ButtonStyle="ButtonStyle.Light"/>
+                    </RadzenStack>
+                </RadzenStack>
+            </RadzenStack>);
+
+        if (result is true && !string.IsNullOrEmpty(image) && EnvironmentId.HasValue)
+        {
+            await DialogService.OpenProgressDialogAsync(
+                $"Pulling {image}...",
+                async (progress, token) => await DockerHostManager
+                    .GetImageManager(EnvironmentId.Value)
+                    .PullImageAsync(image, progress, token));
         }
     }
 

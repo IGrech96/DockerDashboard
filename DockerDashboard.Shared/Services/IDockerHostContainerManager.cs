@@ -1,4 +1,5 @@
 ﻿using DockerDashboard.Shared.Data;
+using DockerDashboard.Shared.Hubs;
 
 namespace DockerDashboard.Shared.Services;
 
@@ -22,5 +23,5 @@ public interface IDockerHostContainerManager
 
     Task RestartContainerAsync(string containerId, CancellationToken cancellationToken);
 
-    Task RecreateContainerAsync(string containerId, bool pullImage, CancellationToken cancellationToken);
+    Task RecreateContainerAsync(string containerId, bool pullImage, IProgress<ProgressEvent> progress, CancellationToken cancellationToken);
 }

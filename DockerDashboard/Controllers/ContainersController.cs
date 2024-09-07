@@ -1,4 +1,7 @@
-﻿using DockerDashboard.Shared.Data;
+﻿using DockerDashboard.Hubs;
+using DockerDashboard.Progress;
+using DockerDashboard.Shared.Data;
+using DockerDashboard.Shared.Hubs;
 using DockerDashboard.Shared.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Extensions;
@@ -6,16 +9,19 @@ using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Results;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
+using Microsoft.AspNetCore.SignalR;
 
 namespace DockerDashboard.Controllers;
 
 public class ContainersController : ODataController
 {
     private readonly IDockerHostManager _hostManager;
+    private readonly IHubContext<ContainerDetailsHub> _hub;
 
-    public ContainersController(IDockerHostManager hostManager)
+    public ContainersController(IDockerHostManager hostManager, IHubContext<ContainerDetailsHub> hub)
     {
         _hostManager = hostManager;
+        _hub = hub;
     }
 
     public async Task<PageResult<ContainerModel>> Get(ODataQueryOptions<ContainerModel> options, long environment, CancellationToken cancellationToken)
@@ -134,7 +140,14 @@ public class ContainersController : ODataController
             }
         }
 
-        await _hostManager.GetContainerManager(environment).RecreateContainerAsync(key, pullImage, cancellationToken);
+        IProgress<ProgressEvent> progress = new Progress<ProgressEvent>();
+
+        if (parameters?.TryGetValue("progressTrackId", out var arg3) == true && arg3 is string { } progressTrackId)
+        {
+            progress = new HubProgress(progressTrackId, _hub);
+        }
+
+        await _hostManager.GetContainerManager(environment).RecreateContainerAsync(key, pullImage, progress, cancellationToken);
         return NoContent();
     }
 

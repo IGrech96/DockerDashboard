@@ -17,7 +17,13 @@ public class DefaultEdmBuilder : IEdmBuilder
         BuildContainers(builder);
 
 
-        builder.EntitySet<ImageModel>("Images");
+        var entitySet = builder.EntitySet<ImageModel>("Images");
+        
+        var pullAction = builder.EntityType<ImageModel>().Collection.Action("Pull");
+        pullAction.Parameter<long>("environment").Required();
+        pullAction.Parameter<string>("image").Required();
+        pullAction.Parameter<string>("progressTrackId").Optional();
+
 
         return builder.GetEdmModel();
     }
@@ -41,6 +47,7 @@ public class DefaultEdmBuilder : IEdmBuilder
         var recreateAction = builder.EntityType<ContainerModel>().Action("Recreate");
         recreateAction.Parameter<long>("environment").Required();
         recreateAction.Parameter<bool>("pullImage").Optional();
+        recreateAction.Parameter<string>("progressTrackId").Optional();
 
         var logsFunction = builder.EntityType<ContainerModel>().Function("Logs");
         logsFunction.Parameter<long>("environment").Required();
