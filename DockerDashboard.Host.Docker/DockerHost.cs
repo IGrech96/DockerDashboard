@@ -90,7 +90,7 @@ internal class DockerHost : IDockerHost
             {
                 "create" => new CreateContainerEvent(message.ID, (await ContainersHost.TryGetContainerAsync(message.ID, cancellationToken))!),
                 "destroy" => new DestroyContainerEvent(message.ID),
-                _ when !string.IsNullOrWhiteSpace(message.ID) => new UpdateContainerEvent(message.ID, (await ContainersHost.TryGetContainerAsync(message.ID, cancellationToken))!),
+                _ when !string.IsNullOrWhiteSpace(message.ID) && await ContainersHost.TryGetContainerAsync(message.ID, cancellationToken) is {} container  => new UpdateContainerEvent(message.ID, container),
                 _ => null,
             };
 
@@ -112,6 +112,8 @@ internal class DockerHost : IDockerHost
         }
 
     }
+
+
 
     public class DockerMessage
     {

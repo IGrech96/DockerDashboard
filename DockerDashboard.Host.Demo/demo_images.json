@@ -1,0 +1,180 @@
+{
+  "value": [
+    {
+      "ImageId": "sha256:1528ec6171ca63a597e96d4894c2d443ade52c38ee983ce8a56cac134813c254",
+      "ImageName": "mcr.microsoft.com/dotnet/aspnet",
+      "ImageTag": "8.0",
+      "Created": "2024-09-05T03:31:33+03:00",
+      "Size": 217386715,
+      "Countainers": -1
+    },
+    {
+      "ImageId": "sha256:b5bf7a5014208414e3691e24a487e1c0a37a25b3f4ebb2ec668068c99f5fdee3",
+      "ImageName": "jetbrains/youtrack",
+      "ImageTag": "2024.2.41254",
+      "Created": "2024-08-19T16:30:56+03:00",
+      "Size": 1943312338,
+      "Countainers": -1
+    },
+    {
+      "ImageId": "sha256:67db1c7ba0dbefd0bae002196f363ef1f8a948fcbffbec1841ee989512e0d71b",
+      "ImageName": "dockerdashboard",
+      "ImageTag": "latest",
+      "Created": "2024-08-18T15:41:15+03:00",
+      "Size": 314766308,
+      "Countainers": -1
+    },
+    {
+      "ImageId": "sha256:2886c2259d50ee6f3c936afb25a8a1acc7006337507513e95a728f4487963860",
+      "ImageName": "ivang2896044/receiptstorage",
+      "ImageTag": "latest",
+      "Created": "2024-07-10T20:34:36+03:00",
+      "Size": 202997660,
+      "Countainers": -1
+    },
+    {
+      "ImageId": "sha256:b07c56ddefd680509ad0cf25253b427ed872bb902f8da1b460d1cb0cbcc2d15c",
+      "ImageName": "ivang2896044/receiptstorage",
+      "ImageTag": "v1.0.11",
+      "Created": "2024-05-31T08:14:39+03:00",
+      "Size": 174194276,
+      "Countainers": -1
+    },
+    {
+      "ImageId": "sha256:ecb1ff9d6c268c540aff9be1279c4079ae1d4d05dd865dc7714defe37cda18bb",
+      "ImageName": "ivang2896044/receiptstorage",
+      "ImageTag": "v1.0.10",
+      "Created": "2024-05-31T08:06:12+03:00",
+      "Size": 164661138,
+      "Countainers": -1
+    },
+    {
+      "ImageId": "sha256:753a56f99de4fe833affbc39e276b2b85bffe9ba2e0eea253afb3afba8718fe9",
+      "ImageName": "ivang2896044/receiptstorage",
+      "ImageTag": "1.0.9",
+      "Created": "2024-05-30T08:04:13+03:00",
+      "Size": 97595550,
+      "Countainers": -1
+    },
+    {
+      "ImageId": "sha256:7e329862aa984bcf240d89f4122ccf0bd62e39b6dcd599ad3c6793f04e8b9864",
+      "ImageName": "receiptstoragetelegrambot",
+      "ImageTag": "dev",
+      "Created": "2024-05-30T08:01:20+03:00",
+      "Size": 87993413,
+      "Countainers": -1
+    },
+    {
+      "ImageId": "sha256:3c9dede708b73b4999d9269c20b38adb11e1cf8169aea623bc71a6ef60a7b3b8",
+      "ImageName": "ivang2896044/receiptstorage",
+      "ImageTag": "v1.0.9",
+      "Created": "2024-05-29T21:58:30+03:00",
+      "Size": 270222181,
+      "Countainers": -1
+    },
+    {
+      "ImageId": "sha256:b29236c54814de5acddbe38dc84a930b5349d458d26cb5a1a34703b80b024d33",
+      "ImageName": "ivang2896044/receiptstorage",
+      "ImageTag": "v1.0.8",
+      "Created": "2024-05-29T21:15:46+03:00",
+      "Size": 270222181,
+      "Countainers": -1
+    },
+    {
+      "ImageId": "sha256:08e1b24010d92d523a9f7c8030de89494b6be644d47ff1b1d3ae08211d92b1c5",
+      "ImageName": "ivang2896044/receiptstorage",
+      "ImageTag": "v1.0.5",
+      "Created": "2024-05-29T21:15:46+03:00",
+      "Size": 270222181,
+      "Countainers": -1
+    },
+    {
+      "ImageId": "sha256:147dc6a6c1128a146575942f6c9e82a8f64d3f3f3bdcd8c2c8bf1301e4894d0a",
+      "ImageName": "ivang2896044/receiptstorage",
+      "ImageTag": "v1.0.7",
+      "Created": "2024-05-29T21:15:46+03:00",
+      "Size": 270222181,
+      "Countainers": -1
+    },
+    {
+      "ImageId": "sha256:79728201c434be609cc136c98203d89155c561fec69d9293191982dcf498099d",
+      "ImageName": "ivang2896044/receiptstorage",
+      "ImageTag": "v1.0.6",
+      "Created": "2024-05-29T21:15:46+03:00",
+      "Size": 270222181,
+      "Countainers": -1
+    },
+    {
+      "ImageId": "sha256:fa5c519fe70873a39bf2228e416320d30bb38c1ea24304ce824114f23749aca5",
+      "ImageName": "ivang2896044/receiptstorage",
+      "ImageTag": "v1.0.3",
+      "Created": "2024-05-29T20:49:33+03:00",
+      "Size": 202179826,
+      "Countainers": -1
+    },
+    {
+      "ImageId": "sha256:fa5c519fe70873a39bf2228e416320d30bb38c1ea24304ce824114f23749aca5",
+      "ImageName": "ivang2896044/receiptstorage",
+      "ImageTag": "v1.0.4",
+      "Created": "2024-05-29T20:49:33+03:00",
+      "Size": 202179826,
+      "Countainers": -1
+    },
+    {
+      "ImageId": "sha256:ec861be017681c5da7a762bd29eb07b4acd2391a9fa5ca9150ad6e5554c0506c",
+      "ImageName": "mcr.microsoft.com/dotnet/aspnet",
+      "ImageTag": "7.0",
+      "Created": "2024-05-29T19:10:55+03:00",
+      "Size": 211986791,
+      "Countainers": -1
+    },
+    {
+      "ImageId": "sha256:1a83fd5edeedfe9b2889414a2226f9f6bc24235f027f6f27f9e86ad38ccf440e",
+      "ImageName": "redis",
+      "ImageTag": "7.2",
+      "Created": "2024-05-23T02:17:59+03:00",
+      "Size": 116501765,
+      "Countainers": -1
+    },
+    {
+      "ImageId": "sha256:98ade8cb5e3b033340a03c49d6ffa5229889a4e990969c9cfed06fbf4ffae134",
+      "ImageName": "mcr.microsoft.com/dotnet/runtime",
+      "ImageTag": "8.0",
+      "Created": "2024-05-14T16:30:17+03:00",
+      "Size": 192627287,
+      "Countainers": -1
+    },
+    {
+      "ImageId": "sha256:61ffd9d39bd0f80aa63f58d2f4521e2e966d09b36258c00f99f3aa6fd3fd519f",
+      "ImageName": "mongo",
+      "ImageTag": "6.0",
+      "Created": "2024-04-18T13:01:32+03:00",
+      "Size": 726581764,
+      "Countainers": -1
+    },
+    {
+      "ImageId": "sha256:71009a3edde7c6988eb3a3b51c9dc3cacc154494ca7e5e33ed567a38bf75c130",
+      "ImageName": "testcontainers/ryuk",
+      "ImageTag": "0.6.0",
+      "Created": "2023-12-21T17:31:54+03:00",
+      "Size": 14910170,
+      "Countainers": -1
+    },
+    {
+      "ImageId": "sha256:ccd94e8b5fd9d86dfb0ef4839ecfe332bbfa19d50ea91a2562ddbe575b176aa2",
+      "ImageName": "postgres",
+      "ImageTag": "15.1",
+      "Created": "2023-02-09T07:40:22+03:00",
+      "Size": 378687027,
+      "Countainers": -1
+    },
+    {
+      "ImageId": "sha256:4885f6112d742a8b1ff89430aa306923eadf8f7740c40397a0306466a46f9ca0",
+      "ImageName": "mcr.microsoft.com/mssql/server",
+      "ImageTag": "2019-CU18-ubuntu-20.04",
+      "Created": "2022-09-13T23:04:49+03:00",
+      "Size": 1468023689,
+      "Countainers": -1
+    }
+  ]
+}

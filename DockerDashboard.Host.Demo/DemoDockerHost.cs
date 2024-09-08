@@ -12,6 +12,7 @@ internal class DemoDockerHost : IDockerHost, IDockerHostContainerManager, IDocke
     private readonly IMessageBus _hubContex;
     private readonly DockerEnvironment _environment;
     private readonly List<ContainerDetailedModel> _containers;
+    private readonly List<ImageModel> _images;
 
     public IDockerHostContainerManager ContainersHost => this;
     public IDockerHostImageManager ImagesHost => this;
@@ -20,7 +21,8 @@ internal class DemoDockerHost : IDockerHost, IDockerHostContainerManager, IDocke
     {
         _hubContex = hubContex;
         _environment = environment;
-        _containers = GenerateContainers().ToList();
+        _containers = Load<DemoContainers, ContainerDetailedModel>(Demo.demo_containers);
+        _images = Load<DemoImages, ImageModel>(Demo.demo_images);
     }
 
     public Task StartWatchingAsync(CancellationToken cancellationToken)
@@ -125,7 +127,7 @@ internal class DemoDockerHost : IDockerHost, IDockerHostContainerManager, IDocke
 
     public IAsyncEnumerable<ImageModel> GetImagesAsync(CancellationToken cancellationToken)
     {
-        return AsyncEnumerable.Empty<ImageModel>();
+        return _images.ToAsyncEnumerable();
     }
 
     public Task PullImageAsync(string image, IProgress<ProgressEvent> progress, CancellationToken cancellationToken)
@@ -133,19 +135,27 @@ internal class DemoDockerHost : IDockerHost, IDockerHostContainerManager, IDocke
         return Task.CompletedTask;
     }
 
-    private ContainerDetailedModel[] GenerateContainers()
+    private List<TOutput> Load<TWrapper,TOutput>(byte[] data) where TWrapper : IDemoWrapper<TOutput>
     {
         var options = new JsonSerializerOptions()
         {
             Converters = { new JsonStringEnumConverter() }
         };
-        return JsonSerializer.Deserialize<DemoContainers>(Demo.demo_containers, options)!.value;
+        return JsonSerializer.Deserialize<TWrapper>(data, options)!.value.ToList();
     }
 
-    public class DemoContainers
+    public class DemoContainers : IDemoWrapper<ContainerDetailedModel>
     {
         public ContainerDetailedModel[] value { get; set; } = [];
     }
 
-    
+    public class DemoImages : IDemoWrapper<ImageModel>
+    {
+        public ImageModel[] value { get; set; } = [];
+    }
+
+    public interface IDemoWrapper<out T>
+    {
+        T[] value { get; }
+    }
 }

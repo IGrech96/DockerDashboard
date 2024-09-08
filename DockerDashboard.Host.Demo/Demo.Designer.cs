@@ -69,5 +69,15 @@ namespace DockerDashboard.Host.Demo {
                 return ((byte[])(obj));
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] demo_images {
+            get {
+                object obj = ResourceManager.GetObject("demo_images", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
     }
 }

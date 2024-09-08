@@ -121,4 +121,7 @@
   <data name="demo_containers" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>demo_containers.json;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
+  <data name="demo_images" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>demo_images.json;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
 </root>

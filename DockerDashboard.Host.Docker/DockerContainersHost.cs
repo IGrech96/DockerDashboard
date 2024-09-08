@@ -143,7 +143,7 @@ internal class DockerContainersHost : IDockerHostContainerManager
             All=true,
         }, cancellationToken);
 
-        return data.First().ToContainer();
+        return data.FirstOrDefault()?.ToContainer();
     }
 
     public async Task<ContainerDetailedModel?> TryGetContainerDetailsAsync(string containerId, CancellationToken cancellationToken)
@@ -174,7 +174,7 @@ internal class DockerContainersHost : IDockerHostContainerManager
 
     public async Task DeleteContainerAsync(string containerId, CancellationToken cancellationToken)
     {
-        await _client.Containers.RemoveContainerAsync(containerId, new(), cancellationToken);
+        await _client.Containers.RemoveContainerAsync(containerId, new() {Force = true}, cancellationToken);
     }
 
     public async Task RestartContainerAsync(string containerId, CancellationToken cancellationToken)
