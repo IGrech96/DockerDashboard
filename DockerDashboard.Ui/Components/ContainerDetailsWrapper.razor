@@ -180,62 +180,25 @@ else
         }
     }
 
-    private enum ReCreateContainerDialogResult
-    {
-        Cancel,
-
-        Recreate,
-
-        RecreateWithNewImage
-    }
-
     private async Task Restart(RadzenSplitButtonItem? args)
     {
         if (Container != null && EnvironmentId != null)
         {
             if (args?.Value is "Recreate")
             {
-                var result = await ShowDialog();
+                var result = await DialogService.OpenRecreateContainerDialogAsync(Container);
 
-                if (result is not ReCreateContainerDialogResult.Cancel)
+                if (result is not DialogServiceExtensions.ReCreateContainerDialogResult.Cancel)
                 {
                     Container.Status = ContainerStatus.NA;
                     StateHasChanged();
 
-                    //TODO: dialog box with progress
-                    var progress = new Progress<ProgressEvent>();
-                    await DockerHostManager.GetContainerManager(EnvironmentId!.Value).RecreateContainerAsync(Container.ContainerId, result == ReCreateContainerDialogResult.RecreateWithNewImage, progress, CancellationToken.None);
-                }
+                    await DialogService.OpenProgressDialogAsync(
+                        $"Recreating {Container.ContainerName}...",
+                        async (progress, token) => await DockerHostManager
+                            .GetContainerManager(EnvironmentId.Value)
+                            .RecreateContainerAsync(Container!.ContainerId, result is DialogServiceExtensions.ReCreateContainerDialogResult.RecreateWithNewImage,  progress, token));
 
-                async Task<ReCreateContainerDialogResult> ShowDialog()
-                {
-                    bool pullImage = false;
-                    var result = await DialogService.OpenAsync("Re-Create container", ds =>
-                        @<RadzenStack Gap="1.5rem">
-                            <p>Recreate <b>@Container?.ShortId @Container?.ContainerName</b>?</p>
-                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
-                                <RadzenStack Orientation="Orientation.Horizontal">
-                                    <RadzenButton Text="Ok" Click="() => ds.Close(ReCreateContainerDialogResult.Recreate)" Style="width: 80px;"/>
-                                    <RadzenButton Text="Cancel" Click="() => ds.Close(ReCreateContainerDialogResult.Cancel)" ButtonStyle="ButtonStyle.Light"/>
-                                </RadzenStack>
-                                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
-                                    <RadzenLabel Text="Pull image" Component="True" />
-                                    <RadzenSwitch @bind-Value="pullImage" Name="True" />
-                                </RadzenStack>
-                               
-                            </RadzenStack>
-                        </RadzenStack>);
-
-                    if (result is ReCreateContainerDialogResult enumResult)
-                    {
-                        return enumResult switch
-                        {
-                            ReCreateContainerDialogResult.Recreate when pullImage => ReCreateContainerDialogResult.RecreateWithNewImage,
-                            _ => enumResult
-                        };
-                    }
-
-                    return ReCreateContainerDialogResult.Cancel;
                 }
             }
             else

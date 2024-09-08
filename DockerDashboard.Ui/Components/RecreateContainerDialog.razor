@@ -1,0 +1,42 @@
+﻿@using DockerDashboard.Shared.Data
+@using DockerDashboard.Shared.Hubs
+@using DockerDashboard.Ui.Services
+
+@inject Radzen.DialogService DialogService
+
+<RadzenStack Gap="1.5rem">
+    <p>Recreate <b>@Container?.ShortId @Container?.ContainerName</b>?</p>
+    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+        <RadzenStack Orientation="Orientation.Horizontal">
+            <RadzenButton Text="Ok" Click="Ok" Style="width: 80px;" />
+            <RadzenButton Text="Cancel" Click="() => DialogService.Close(DialogServiceExtensions.ReCreateContainerDialogResult.Cancel)" ButtonStyle="ButtonStyle.Light" />
+        </RadzenStack>
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+            <RadzenLabel Text="Pull image" Component="True" />
+            <RadzenSwitch @bind-Value="PullImage" Name="True" />
+        </RadzenStack>
+                               
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+
+    [Parameter]
+    public ContainerModel? Container { get; set; }
+
+    [Parameter]
+    public bool PullImage { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
+
+    private void Ok()
+    {
+        DialogService.Close(PullImage
+            ? DialogServiceExtensions.ReCreateContainerDialogResult.RecreateWithNewImage
+            : DialogServiceExtensions.ReCreateContainerDialogResult.Recreate);
+    }
+
+}

@@ -1,9 +1,11 @@
 ﻿@using DockerDashboard.Shared.Data
 @using DockerDashboard.Shared.Hubs
 @using DockerDashboard.Shared.Services
+@using DockerDashboard.Ui.Services
 @inject IDockerHostManager DockerHostManager
 @inject NavigationManager Navigation
 @inject ContextMenuService ContextMenuService
+@inject DialogService DialogService
 
 <RadzenDataGrid @ref=_grid Data="@_orderedContainers" AllowVirtualization="true" Style="overflow:auto;"
                 AllowFiltering="true" FilterPopupRenderMode="PopupRenderMode.OnDemand" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" LogicalFilterOperator="LogicalFilterOperator.Or"
@@ -166,11 +168,37 @@
             menu.Add(new ContextMenuItem() { Text = "Pause", Value = "Pause", Icon = "pause" });
         }
 
+        menu.Add(new ContextMenuItem() { Text = "Restart", Value = "Restart", Icon = "restart_alt" });
+        menu.Add(new ContextMenuItem() { Text = "Re-create", Value = "Recreate", Icon = "reset_wrench" });
+
 
         ContextMenuService.Open(args, menu,
-            (e) =>
+            async (e) =>
             {
-                //console.Log($"Menu item with Value={e.Value} clicked. Tree item: {args.Text}, EmployeeID: {((Employee)args.Value).EmployeeID}");
+                if (e.Value is "Restart" && EnvironmentId.HasValue)
+                {
+                    await DockerHostManager
+                        .GetContainerManager(EnvironmentId.Value)
+                        .RestartContainerAsync(data.ContainerId, CancellationToken.None);
+                }
+
+                if (e.Value is "Recreate" && EnvironmentId.HasValue)
+                {
+                    var result = await DialogService.OpenRecreateContainerDialogAsync(data);
+
+                    if (result is not DialogServiceExtensions.ReCreateContainerDialogResult.Cancel)
+                    {
+                        data.Status = ContainerStatus.NA;
+                        StateHasChanged();
+
+                        await DialogService.OpenProgressDialogAsync(
+                            $"Recreating {data.ContainerName}...",
+                            async (progress, token) => await DockerHostManager
+                                .GetContainerManager(EnvironmentId.Value)
+                                .RecreateContainerAsync(data!.ContainerId, result is DialogServiceExtensions.ReCreateContainerDialogResult.RecreateWithNewImage,  progress, token));
+
+                    }
+                }
             }
         );
 
