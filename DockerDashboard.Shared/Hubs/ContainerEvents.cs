@@ -13,21 +13,24 @@ public abstract class ContainerEvent(string containerId)
     public string ContainerId { get; set; } = containerId;
 }
 
-
+[method: JsonConstructor]
 public class DestroyContainerEvent(string containerId) : ContainerEvent(containerId)
 {
 }
 
+[method: JsonConstructor]
 public class CreateContainerEvent(string containerId, ContainerModel container) : ContainerEvent(containerId) 
 {
     public ContainerModel Container { get; set; } = container;
 }
 
-public class UpdateContainerEvent(string containerId, ContainerModel container) : ContainerEvent(containerId) 
+[method: JsonConstructor]
+public class UpdateContainerEvent(string containerId, ContainerModel container) : ContainerEvent(containerId)
 {
     public ContainerModel Container { get; set; } = container;
 }
 
+[method: JsonConstructor]
 public class ContainerLogEvent(string containerId, string message) : ContainerEvent(containerId)
 {
     public string Message {get;set; } = message;

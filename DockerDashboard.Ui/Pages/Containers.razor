@@ -5,6 +5,7 @@
 @using Microsoft.AspNetCore.SignalR.Client
 @using IPageDetailsNotificationService = IPageDetailsNotificationService
 @using Microsoft.AspNetCore.Components.Sections
+
 @inject IPageDetailsNotificationService PageDetailsNotificationService;
 @inject NavigationManager Navigation;
 
@@ -47,6 +48,7 @@
             //.AddJsonProtocol(op => op.PayloadSerializerOptions.)
             .WithUrl(Navigation.ToAbsoluteUri("/containerDetailsHub"))
             .Build();
+
         await _hubConnection.StartAsync();
     }
 

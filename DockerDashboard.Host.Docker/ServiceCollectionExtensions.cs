@@ -3,6 +3,7 @@ using DockerDashboard.Shared.Data;
 using DockerDashboard.Shared.Messaging;
 using DockerDashboard.Shared.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace DockerDashboard.Host.Docker;
 
@@ -17,7 +18,8 @@ public static class ServiceCollectionExtensions
             return new DockerHost(
                 serviceprovider.GetRequiredService<IMessageBus>(),
                 serviceprovider.GetRequiredService<IDockerRegistryManager>(),
-                dockerenvironment);
+                dockerenvironment,
+                serviceprovider.GetRequiredService<ILogger<IDockerHost>>());
         }
     }
 }

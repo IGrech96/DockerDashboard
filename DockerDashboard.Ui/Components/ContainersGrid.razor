@@ -60,6 +60,7 @@
 @code {
     private RadzenDataGrid<ContainerModel>? _grid;
     private List<ContainerModel>? _orderedContainers;
+    private long? _previousEnvironment;
 
     [Parameter]
     public long? EnvironmentId { get; set; }
@@ -88,7 +89,11 @@
     protected override async Task OnParametersSetAsync()
     {
         await base.OnParametersSetAsync();
-        await RefreshDataAsync();
+        if (_previousEnvironment != EnvironmentId && EnvironmentId.HasValue)
+        {
+            _previousEnvironment = EnvironmentId;
+            await RefreshDataAsync();
+        }
     }
 
     public async Task UpdateContainerAsync(ContainerEvent @event)

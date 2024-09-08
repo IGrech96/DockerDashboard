@@ -193,8 +193,7 @@ internal class DockerContainersHost : IDockerHostContainerManager
 
         if (pullImage)
         {
-           await _imageManager.
-               PullImageAsync(data.Image, progress, cancellationToken);
+           await _imageManager.PullImageAsync(data.Config.Image, progress, cancellationToken);
         }
 
         await DeleteContainerAsync(containerId, cancellationToken);

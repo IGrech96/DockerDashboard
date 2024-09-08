@@ -50,7 +50,7 @@ public class DockerHostContainerManager : IDockerHostContainerManager
                 //.QueryOptions($"environment={environment}")
                 .Key(containerId)
                 .Function<ContainerDetailedModel>(DetailsAction)
-                .Set(new { _environment })
+                .Set(new { environment = _environment })
                 .ExecuteAsSingleAsync(cancellationToken);
 
             return data;
@@ -64,19 +64,27 @@ public class DockerHostContainerManager : IDockerHostContainerManager
 
     public async IAsyncEnumerable<ContainerLog> GetContainerLogsAsync(string containerId, DateTimeOffset? since, DateTimeOffset? until, long? top, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var client = _client
-            .For<ContainerModel>(ContainersCollection);
-
-        if (top.HasValue)
+        ContainerLog[] data = [];
+        try
         {
-            client = client.Top(top.Value);
-        }
+            var client = _client
+                .For<ContainerModel>(ContainersCollection);
 
-        var data = await client
-            .Key(containerId)
-            .Function<ContainerLog>("Logs")
-            .Set(new { _environment, until, since })
-            .ExecuteAsArrayAsync(cancellationToken);
+            if (top.HasValue)
+            {
+                client = client.Top(top.Value);
+            }
+
+            data = await client
+                .Key(containerId)
+                .Function<ContainerLog>("Logs")
+                .Set(new { environment = _environment, until, since })
+                .ExecuteAsArrayAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(Logging.Events.Containers, ex, "Failed to fetch logs for '{containerId}'", containerId);
+        }
 
         foreach (var item in data)
         {
@@ -134,7 +142,7 @@ public class DockerHostContainerManager : IDockerHostContainerManager
                 //.QueryOptions($"environment={environment}")
                 .Key(containerId)
                 .Action("Pause")
-                .Set(new { _environment })
+                .Set(new {environment= _environment })
                 .ExecuteAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -152,7 +160,7 @@ public class DockerHostContainerManager : IDockerHostContainerManager
                 //.QueryOptions($"environment={environment}")
                 .Key(containerId)
                 .Action("Restart")
-                .Set(new { _environment })
+                .Set(new { environment=_environment })
                 .ExecuteAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -170,7 +178,7 @@ public class DockerHostContainerManager : IDockerHostContainerManager
                 //.QueryOptions($"environment={environment}")
                 .Key(containerId)
                 .Action("Recreate")
-                .Set(new { _environment, pullImage })
+                .Set(new { environment=_environment, pullImage })
                 .ExecuteAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -188,7 +196,7 @@ public class DockerHostContainerManager : IDockerHostContainerManager
                 //.QueryOptions($"environment={environment}")
                 .Key(containerId)
                 .Action("Start")
-                .Set(new { _environment })
+                .Set(new { environment=_environment })
                 .ExecuteAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -206,7 +214,7 @@ public class DockerHostContainerManager : IDockerHostContainerManager
                 //.QueryOptions($"environment={environment}")
                 .Key(containerId)
                 .Action("Stop")
-                .Set(new { _environment })
+                .Set(new { environment=_environment })
                 .ExecuteAsync(cancellationToken);
         }
         catch (Exception ex)

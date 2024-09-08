@@ -7,6 +7,7 @@ using DockerDashboard.Shared.Data;
 using DockerDashboard.Shared.Hubs;
 using DockerDashboard.Shared.Messaging;
 using DockerDashboard.Shared.Services;
+using Microsoft.Extensions.Logging;
 
 namespace DockerDashboard.Host.Docker;
 
@@ -15,6 +16,7 @@ internal class DockerHost : IDockerHost
     private readonly IDockerClient _client;
     private readonly IMessageBus _containerDetailsHub;
     private readonly DockerEnvironment _environment;
+    private readonly ILogger<IDockerHost> _logger;
     private CancellationTokenSource? _watchContainerEventsTokenSource;
 
     public IDockerHostContainerManager ContainersHost { get; }
@@ -23,11 +25,13 @@ internal class DockerHost : IDockerHost
     public DockerHost(
         IMessageBus containerDetailsHub,
         IDockerRegistryManager registryManager,
-        DockerEnvironment environment)
+        DockerEnvironment environment,
+        ILogger<IDockerHost> logger)
     {
         _client = new DockerClientConfiguration().CreateClient();
         _containerDetailsHub = containerDetailsHub;
         _environment = environment;
+        _logger = logger;
 
         ImagesHost = new DockerImagesHost(_client, containerDetailsHub, registryManager, environment);
         ContainersHost = new DockerContainersHost(_client, _containerDetailsHub, ImagesHost, _environment);
@@ -53,9 +57,16 @@ internal class DockerHost : IDockerHost
         {
             var line = await reader.ReadLineAsync(cancellationToken);
             if (line is null) break;
-            var msg = System.Text.Json.JsonSerializer.Deserialize<DockerMessage>(line);
-            if (msg is null) continue;
-            await OnDockerEventAsync(msg, cancellationToken);
+            try
+            {
+                var msg = System.Text.Json.JsonSerializer.Deserialize<DockerMessage>(line);
+                if (msg is null) continue;
+                await OnDockerEventAsync(msg, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to parse docker event.");
+            }
         }
     }
 
@@ -73,24 +84,31 @@ internal class DockerHost : IDockerHost
 
     private async Task OnDockerEventAsync(DockerMessage message, CancellationToken cancellationToken)
     {
-        ContainerEvent? @event = message.Status switch
+        if (message.ID != null)
         {
-            "create" => new CreateContainerEvent(message.ID, (await ContainersHost.TryGetContainerAsync(message.ID, cancellationToken))!),
-            "destroy" => new DestroyContainerEvent(message.ID),
-            _ when !string.IsNullOrWhiteSpace(message.ID) => new UpdateContainerEvent(message.ID, (await ContainersHost.TryGetContainerAsync(message.ID, cancellationToken))!),
-            _ => null,
-        };
+            ContainerEvent? @event = message.Status switch
+            {
+                "create" => new CreateContainerEvent(message.ID, (await ContainersHost.TryGetContainerAsync(message.ID, cancellationToken))!),
+                "destroy" => new DestroyContainerEvent(message.ID),
+                _ when !string.IsNullOrWhiteSpace(message.ID) => new UpdateContainerEvent(message.ID, (await ContainersHost.TryGetContainerAsync(message.ID, cancellationToken))!),
+                _ => null,
+            };
 
 
-        var methodName = @event switch
+            var methodName = @event switch
+            {
+                CreateContainerEvent create => HubRouting.ContainerCreateMethod(_environment.Id),
+                DestroyContainerEvent destroy => HubRouting.ContainerDestroyMethod(_environment.Id),
+                _ => HubRouting.ContainerUpdateMethod(_environment.Id)
+            };
+            if (@event is not null)
+            {
+                await _containerDetailsHub.SendToAllAsync(methodName, @event, cancellationToken);
+            }
+        }
+        else
         {
-            CreateContainerEvent create => HubRouting.ContainerCreateMethod(_environment.Id),
-            DestroyContainerEvent destroy => HubRouting.ContainerDestroyMethod(_environment.Id),
-            _ => HubRouting.ContainerUpdateMethod(_environment.Id)
-        };
-        if (@event is not null) 
-        {
-           await _containerDetailsHub.SendToAllAsync(methodName, @event, cancellationToken);
+            //TODO:
         }
 
     }
@@ -98,13 +116,13 @@ internal class DockerHost : IDockerHost
     public class DockerMessage
     {
         [JsonPropertyName("status")]
-        public required string Status { get; set; }
+        public string? Status { get; set; }
 
         [JsonPropertyName("id")]
-        public required string ID { get; set; }
+        public string? ID { get; set; }
 
         [JsonPropertyName("from")]
-        public required string From { get; set; }
+        public string? From { get; set; }
 
         [JsonPropertyName("Type")]
         public required string Type { get; set; }

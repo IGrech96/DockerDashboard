@@ -19,6 +19,6 @@ public class HubContextMessageBus : IMessageBus
 
     public Task SendToAllAsync<T>(string method, T message, CancellationToken cancellationToken)
     {
-        return _hubContext.Clients.All.SendAsync(method, method, cancellationToken);
+        return _hubContext.Clients.All.SendAsync(method, message, cancellationToken);
     }
 }

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using DockerDashboard.Host.Demo;
 using DockerDashboard.Host.Docker;
 using DockerDashboard.Hubs;
@@ -5,13 +6,14 @@ using DockerDashboard.OData;
 using DockerDashboard.Services.DockerHost;
 using DockerDashboard.Services.Environment;
 using DockerDashboard.Services.Registry;
+using DockerDashboard.Shared.Data;
+using DockerDashboard.Shared.Hubs;
 using DockerDashboard.Shared.Messaging;
 using DockerDashboard.Shared.Services;
 using DockerDashboard.Shared.Services.Environment;
 using Microsoft.AspNetCore.OData;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.OpenApi.Models;
-using Newtonsoft.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -81,11 +83,6 @@ app.MapRazorPages();
 app.MapFallbackToFile("index.html");
 
 //app.MapFallbackToPage("/_Host");
-
-var jsonSerializerSettings = new JsonSerializerSettings
-{
-    // Customize JSON serialization settings
-};
 
 //GlobalHost.DependencyResolver.Register(typeof(JsonSerializer), () => JsonSerializer.Create(jsonSerializerSettings));
 
