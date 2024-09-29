@@ -1,0 +1,145 @@
+﻿@using DockerDashboard.Shared.Data
+@using DockerDashboard.Shared.Hubs
+@using DockerDashboard.Shared.Services
+@using DockerDashboard.Ui.Services
+@using Microsoft.AspNetCore.Components.Sections
+@inject NavigationManager Navigation
+@inject IDockerHostManager DockerHostManager
+@inject TooltipService TooltipService
+@inject IJSRuntime JSRuntime
+@inject DialogService DialogService
+
+
+
+<style>
+    ul[role=tablist] {
+        flex-wrap: wrap;
+    }
+
+    .box {
+        overflow-wrap: break-word;
+    }
+</style>
+@if (Image == null)
+{
+    <SectionContent SectionName="page-details-sidebar">
+        <RadzenStack AlignItems="AlignItems.Center">
+            <RadzenProgressBarCircular ShowValue="true" Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Large">
+                <Template>Loading...</Template>
+            </RadzenProgressBarCircular>
+        </RadzenStack>
+    </SectionContent>
+}
+else
+{
+    <SectionContent SectionName="page-details-toolbar">
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Start">
+                <RadzenButton Click="@Pull" Text="@EnsureFullMode("Pull")" Icon="download" MouseEnter="@(args => ShowTooltip(args,"Pull"))"></RadzenButton>
+                <RadzenButton Click="@Delete" Text="@EnsureFullMode("Delete")" Icon="delete" MouseEnter="@(args => ShowTooltip(args,"Delete"))"></RadzenButton>
+            </RadzenStack>
+            @if (CompactMode)
+            {
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End">
+                    <RadzenButton Icon="open_in_new" MouseEnter="@(args => ShowTooltip(args, "Open in a new tab"))" Click="OnOpenInNewTab"></RadzenButton>
+                    <RadzenButton Icon="close" Click="OnImageDetailsClose" MouseEnter="@(args => ShowTooltip(args, "Close"))"></RadzenButton>
+                </RadzenStack>
+            }
+        </RadzenStack>
+    </SectionContent>
+
+    @if (CompactMode)
+    {
+        <SectionContent SectionName="page-details-sidebar">
+            <ImageDetails @ref="_details" EnvironmentId="EnvironmentId" Image="Image"></ImageDetails>
+        </SectionContent>
+    }
+    else
+    {
+        <ImageDetails @ref="_details" EnvironmentId="EnvironmentId" Image="Image"></ImageDetails>
+    }
+}
+
+@code {
+
+    [Parameter]
+    public ImageModel? Image { get; set; }
+
+    [Parameter]
+    public long? EnvironmentId { get; set; }
+
+    [Parameter]
+    public bool CompactMode { get; set; }
+
+    [Parameter]
+    public Func<Task>? Close { get; set; }
+
+    private ImageDetails? _details;
+
+    public async Task UpdateAsync(ContainerEvent @event)
+    {
+        await Task.CompletedTask;
+        // if (@event is UpdateContainerEvent update)
+        // {
+        //     Container = update.Container;
+        //     if (_details != null)
+        //     {
+        //         await _details.ReloadAsync();
+        //     }
+        // }
+        // else if (@event is DestroyContainerEvent)
+        // {
+        //     await OnImageDetailsClose();
+        // }
+    }
+
+    private string? EnsureFullMode(string? activate)
+    {
+        return CompactMode ? null : activate;
+    }
+
+    private void ShowTooltip(ElementReference elementReference, string text, TooltipOptions? options = null) => TooltipService.Open(elementReference, text, options);
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
+
+    protected async Task OnOpenInNewTab()
+    {
+        await JSRuntime.InvokeVoidAsync("open", Navigation.ToAbsoluteUri($"/image/{EnvironmentId}/{Image?.ImageId}"), "_blank");
+    }
+
+    
+
+    private async Task OnImageDetailsClose()
+    {
+        if (Close != null)
+        {
+            await Close();
+        }
+    }
+
+
+    private async Task Delete()
+    {
+        if (EnvironmentId.HasValue && Image != null)
+        {
+            await DockerHostManager.GetImageManager(EnvironmentId.Value).DeleteImageAsync(Image.ImageId, CancellationToken.None);
+        }
+    }
+
+    private async Task Pull()
+    {
+        if (EnvironmentId.HasValue && Image != null)
+        {
+            var fullImageName = $"{Image.ImageName}:{Image.ImageTag}";
+            await DialogService.OpenProgressDialogAsync(
+                $"Pulling {fullImageName}...",
+                async (progress, token) => await DockerHostManager
+                    .GetImageManager(EnvironmentId.Value)
+                    .PullImageAsync(fullImageName, progress, token));
+        }
+    }
+}

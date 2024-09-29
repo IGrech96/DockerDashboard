@@ -49,6 +49,11 @@ public class UiLoggerProvider : ILoggerProvider
             {
                 title = Events.Environments.Name!;
             }
+
+            if (eventId == Events.Images)
+            {
+                title = Events.Images.Name!;
+            }
             
             _notificationsPublisher.Notify(logLevel, title, formatter(state, exception));
         }

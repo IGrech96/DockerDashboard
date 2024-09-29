@@ -1,0 +1,54 @@
+﻿@page "/image/{environmentId:long}/{imageId}"
+@using DockerDashboard.Ui.Components
+@using DockerDashboard.Shared.Data
+@using DockerDashboard.Shared.Services
+@using Microsoft.AspNetCore.Components.Sections
+
+@inject NavigationManager Navigation
+@inject IDockerHostManager DockerHostManager 
+
+<SectionContent SectionName="page-toolbar">
+    <RadzenStack Orientation="Orientation.Horizontal">
+        <RadzenLabel Text="@($"Image {_imageModel?.ImageName}:{_imageModel?.ImageTag}")"></RadzenLabel>
+    </RadzenStack>
+</SectionContent>
+
+<ImageDetailsWrapper @ref="_containerDetailsComponent" EnvironmentId="EnvironmentId" Image="@_imageModel" CompactMode="false"></ImageDetailsWrapper>
+
+@code {
+    [Parameter]
+    public long EnvironmentId { get; set; }
+
+    [Parameter]
+    public string? ImageId { get; set; }
+
+    private ImageModel? _imageModel;
+    private ImageDetailsWrapper? _containerDetailsComponent;
+    // private HubConnection? _hubConnection;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        // _hubConnection = new HubConnectionBuilder()
+        //    .WithUrl(Navigation.ToAbsoluteUri("/containerDetailsHub"))
+        //    .Build();
+
+        // _hubConnection.On<UpdateContainerEvent>(HubRouting.ContainerUpdateMethod(EnvironmentId), OnContainerEvent);
+        // _hubConnection.On<CreateContainerEvent>(HubRouting.ContainerCreateMethod(EnvironmentId), OnContainerEvent);
+        // _hubConnection.On<ContainerLogEvent>(HubRouting.ContainerLogMethod(EnvironmentId), OnContainerEvent);
+
+        // await _hubConnection.StartAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+
+        if (ImageId != null)
+        {
+            _imageModel = await DockerHostManager.GetImageManager(EnvironmentId).TryGetImageAsync(ImageId, CancellationToken.None);
+            StateHasChanged();
+        }
+    }
+}

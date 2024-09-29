@@ -57,6 +57,7 @@
 @code {
     private RadzenDataGrid<ImageModel>? _grid;
     private List<ImageModel>? _orderedContainers;
+    private long? _previousEnvironment;
 
     [Parameter]
     public long? EnvironmentId { get; set; }
@@ -85,7 +86,11 @@
     protected override async Task OnParametersSetAsync()
     {
         await base.OnParametersSetAsync();
-        await RefreshDataAsync();
+        if (_previousEnvironment != EnvironmentId && EnvironmentId.HasValue)
+        {
+            _previousEnvironment = EnvironmentId;
+            await RefreshDataAsync();
+        }
     }
 
     public Task UpdateContainerAsync(ContainerEvent @event)
@@ -187,13 +192,12 @@
         // }
     }
 
-    private Task Delete(ImageModel data)
+    private async Task Delete(ImageModel data)
     {
-        //TODO:
-        return Task.CompletedTask;
-        // data.Status = ContainerStatus.NA;
-        // StateHasChanged();
-        // await DockerHostManager.GetContainerManager(EnvironmentId!.Value).DeleteContainerAsync(data.ContainerId, CancellationToken.None);
+        if (EnvironmentId.HasValue)
+        {
+            await DockerHostManager.GetImageManager(EnvironmentId.Value).DeleteImageAsync(data.ImageId, CancellationToken.None);
+        }
     }
 
     private async Task ReloadGridAsync()

@@ -110,6 +110,21 @@ internal static class DataModelExtensions
         }
     }
 
+    public static ImageModel ToImage(this ImageInspectResponse response)
+    {
+        var (name, tag) = ParseImage(response.RepoTags.First());   
+        return new ImageModel()
+        {
+            ImageId = response.ID,
+            Created = response.Created,
+            ImageName = name,
+            ImageTag = tag,
+            Size = response.Size,
+        };
+
+
+    }
+
     public static (string imageName, string imageTag) ParseImage(string image)
     {
         var tokens = image.Split(":");

@@ -30,6 +30,12 @@
     <Content Update="App.razor">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>
+    <Content Update="Components\ImageDetails.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Update="Components\ImageDetailsWrapper.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
     <Content Update="Pages\Images.razor">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>

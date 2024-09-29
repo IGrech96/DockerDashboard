@@ -1,0 +1,81 @@
+﻿@using DockerDashboard.Shared.Data
+@using DockerDashboard.Shared.Services
+@using DockerDashboard.Ui.Services
+@using ContainerStatus = DockerDashboard.Shared.Data.ContainerStatus
+@inject NavigationManager Navigation
+@inject IDockerHostManager DockerHostManager
+@inject TooltipService TooltipService
+@inject IJSRuntime JSRuntime
+
+<RadzenDataGrid Data="@_imageCommonInfo">
+    <Columns>
+        <RadzenDataGridColumn Title="Name" Property="Name"></RadzenDataGridColumn>
+        <RadzenDataGridColumn Title="Value" Property="Value">
+            <Template Context="data">
+                @if (data.Value is DateTime dateTime)
+                {
+                    @dateTime.ToString("yyyy-MM-dd hh:mm:ss")
+                }
+                else if (data is { Name: "Image", Value: not null })
+                {
+                    <a href="">@data.Value.ToString()!.TrimStart('/')</a>
+                }
+                else if (data is { Name: "Status", Value: ContainerStatus.NA })
+                {
+                    <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" />
+                }
+                else
+                {
+                    @data.Value?.ToString()
+                }
+            </Template>
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>
+
+@code {
+
+    [Parameter] public ImageModel? Image { get; set; }
+
+    [Parameter] public long? EnvironmentId { get; set; }
+
+    private CommonInfo[] _imageCommonInfo = [];
+
+   protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+        await ReloadAsync();
+        
+    }
+
+
+    private void OnRender(DataGridRenderEventArgs<DetailedInfo> args)
+    {
+        if (args.FirstRender)
+        {
+            args.Grid.Groups.Add(new GroupDescriptor() { Property = "Category" });
+            StateHasChanged();
+        }
+    }
+
+    public async Task ReloadAsync()
+    {
+        if (Image != null)
+        {
+            _imageCommonInfo =
+            [
+                new("ID", Image.ImageId),
+                new("Name", Image.ImageName),
+                new("Tag", Image.ImageTag ?? string.Empty),
+                new("Size", Image.Size),
+                new("Created", Image.Created),
+            ];
+        }
+        else
+        {
+            _imageCommonInfo = [];
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+}

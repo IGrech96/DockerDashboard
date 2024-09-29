@@ -10,10 +10,10 @@ public class ImageModel
 
     public string ShortId => ImageId.Substring(0, Math.Min(12, ImageId.Length));
 
-    [Key]
+    //[Key]
     public required string ImageName { get; set; }
 
-    [Key]
+    //[Key]
     public string? ImageTag { get; set; }
 
     public DateTime Created { get; set; }

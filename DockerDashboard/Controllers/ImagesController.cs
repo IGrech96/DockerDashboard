@@ -33,6 +33,26 @@ public class ImagesController : ODataController
         return images;
     }
 
+    public async Task<ImageModel?> Get(long environment, [FromRoute]  string key, CancellationToken cancellationToken)
+    {
+        var image = await _hostManager
+            .GetImageManager(environment)
+            .TryGetImageAsync(key, cancellationToken);
+
+        return image;
+    }
+
+    [HttpDelete]
+    public async Task<ActionResult> Delete(long environment,[FromRoute]  string key, CancellationToken cancellationToken)
+    {
+        await _hostManager
+            .GetImageManager(environment)
+            .DeleteImageAsync(key, cancellationToken);
+
+
+        return NoContent();
+    }
+
     [HttpPost]
     public async Task<ActionResult> Pull(ODataActionParameters? parameters, CancellationToken cancellationToken)
     {

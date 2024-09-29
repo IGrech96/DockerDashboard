@@ -52,18 +52,53 @@ public class DockerHostImageManager : IDockerHostImageManager
 
             await _client
                 .For<ContainerModel>(ImagesCollection)
-                .QueryOptions($"environment={_environment}")
                 .Action("Pull")
                 .Set(new { environment = _environment, image, progressTrackId = progressAdapter.TrackId })
                 .ExecuteAsync(cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.LogError(Logging.Events.Containers, ex, "Failed to pull '{image}'", image);
+            _logger.LogError(Logging.Events.Images, ex, "Failed to pull '{image}'", image);
         }
         finally
         {
             await progressAdapter.DisposeAsync();
+        }
+    }
+
+    public async Task<ImageModel?> TryGetImageAsync(string imageId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var imageModel = await _client
+                .For<ImageModel>(ImagesCollection)
+                .QueryOptions($"environment={_environment}")
+                .Key(imageId)
+                .FindEntryAsync(cancellationToken);
+
+            return imageModel;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(Logging.Events.Images, ex, "Failed to get '{image}'", imageId);
+            return null;
+        }
+    }
+
+    public async Task DeleteImageAsync(string imageId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _client
+                .For<ImageModel>(ImagesCollection)
+                .QueryOptions($"environment={_environment}")
+                .Key(imageId)
+                .DeleteEntryAsync(cancellationToken);
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(Logging.Events.Images, ex, "Failed to delete '{image}'", imageId);
         }
     }
 }

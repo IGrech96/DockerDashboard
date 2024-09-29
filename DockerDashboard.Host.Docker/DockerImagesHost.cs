@@ -66,4 +66,16 @@ public class DockerImagesHost : IDockerHostImageManager
         await _client.Images.CreateImageAsync(imageParamters, authConfig, progressAdapter, cancellationToken);
 
     }
+
+    public async Task<ImageModel?> TryGetImageAsync(string imageId, CancellationToken cancellationToken)
+    {
+        var image = await _client.Images.InspectImageAsync(imageId, cancellationToken);
+
+        return image?.ToImage();
+    }
+
+    public async Task DeleteImageAsync(string imageId, CancellationToken cancellationToken)
+    {
+        await _client.Images.DeleteImageAsync(imageId, new() { Force = true }, cancellationToken);
+    }
 }

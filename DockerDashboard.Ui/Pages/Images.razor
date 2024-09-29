@@ -22,9 +22,9 @@
 
 <ImagesGrid @ref="_grid" EnvironmentId="EnvironmentId" ImageOpen="OnImageOpen"></ImagesGrid>
 
-@if (_containerDetails != null)
+@if (_imageDetails != null)
 {
-    @* <ContainerDetailsWrapper @ref="_containerDetailsComponent" EnvironmentId="@EnvironmentId" Container="@_containerDetails" CompactMode="true" Close="OnContainerDetailsClose"></ContainerDetailsWrapper> *@
+    <ImageDetailsWrapper @ref="_detailsComponent" EnvironmentId="@EnvironmentId" Image="@_imageDetails" CompactMode="true" Close="OnImageDetailsClose"></ImageDetailsWrapper>
 }
 
 @code {
@@ -34,8 +34,8 @@
     public long EnvironmentId { get; set; }
 
     private ImagesGrid? _grid;
-    //private ContainerDetailsWrapper? _containerDetailsComponent;
-    private ImageModel? _containerDetails;
+    private ImageDetailsWrapper? _detailsComponent;
+    private ImageModel? _imageDetails;
     private HubConnection? _hubConnection;
     //private long? _previousEnvironment;
 
@@ -73,31 +73,31 @@
 
     private async Task OnImageOpen(ImageModel arg)
     {
-        _containerDetails = arg;
+        _imageDetails = arg;
         await PageDetailsNotificationService.OpenPageDetailsAsync();
         StateHasChanged();
     }
 
-    private async Task OnContainerUpdate(ContainerEvent arg)
-    {
-        if (_grid != null)
-        {
-            await _grid.UpdateContainerAsync(arg);
-        }
+    // private async Task OnContainerUpdate(ContainerEvent arg)
+    // {
+    //     if (_grid != null)
+    //     {
+    //         await _grid.UpdateContainerAsync(arg);
+    //     }
 
-        // if (_containerDetails?.ContainerId == arg.ContainerId)
-        // {
-        //     if (_containerDetailsComponent != null)
-        //     {
-        //         await _containerDetailsComponent.UpdateAsync(arg);
-        //     }
-        // }
-    }
+    //     // if (_imageDetails?.ContainerId == arg.ContainerId)
+    //     // {
+    //     //     if (_detailsComponent != null)
+    //     //     {
+    //     //         await _detailsComponent.UpdateAsync(arg);
+    //     //     }
+    //     // }
+    // }
 
-    private async Task OnContainerDetailsClose()
+    private async Task OnImageDetailsClose()
     {
         await PageDetailsNotificationService.ClosePageDetailsAsync();
-        _containerDetails = null;
+        _imageDetails = null;
 
         
         StateHasChanged();

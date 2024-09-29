@@ -135,6 +135,18 @@ internal class DemoDockerHost : IDockerHost, IDockerHostContainerManager, IDocke
         return Task.CompletedTask;
     }
 
+    public Task<ImageModel?> TryGetImageAsync(string imageId, CancellationToken cancellationToken)
+    {
+        var data = _images.First(i => i.ImageId == imageId);
+        return Task.FromResult<ImageModel?>(data);
+    }
+
+    public Task DeleteImageAsync(string imageId, CancellationToken cancellationToken)
+    {
+        _images.RemoveAll(r => r.ImageId == imageId);
+        return Task.CompletedTask;
+    }
+
     private List<TOutput> Load<TWrapper,TOutput>(byte[] data) where TWrapper : IDemoWrapper<TOutput>
     {
         var options = new JsonSerializerOptions()
