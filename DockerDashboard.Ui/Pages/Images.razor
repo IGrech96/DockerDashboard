@@ -8,6 +8,7 @@
 @inject IPageDetailsNotificationService PageDetailsNotificationService;
 @inject NavigationManager Navigation;
 
+@implements IAsyncDisposable
 <style>
     .rz-grid-table {
         width: unset;
@@ -99,8 +100,13 @@
         await PageDetailsNotificationService.ClosePageDetailsAsync();
         _imageDetails = null;
 
-        
+
         StateHasChanged();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await PageDetailsNotificationService.ClosePageDetailsAsync();
     }
 
 }
